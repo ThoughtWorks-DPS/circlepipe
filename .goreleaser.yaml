@@ -17,7 +17,7 @@ builds:
         goarch: arm64
     binary: circlepipe
     ldflags:
-      - -s -w -X cmd.Version={{.Version}}
+      - -s -w -X github.com/ThoughtWorks-DPS/circlepipe/cmd.Version={{.Version}}
 signs:
   - cmd: cosign
     stdin: '{{ .Env.COSIGN_PWD }}'
