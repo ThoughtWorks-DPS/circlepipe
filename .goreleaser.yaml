@@ -5,10 +5,20 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
+    gobinary: "go1.19.4"
     goos:
       - linux
       - darwin
       - windows
+    goarch:
+      - '386'
+      - amd64
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: '386'
+      - goos: windows
+        goarch: arm64
     binary: circlepipe
     ldflags:
       - -s -w -X circlepipe/cmd.Version={{.Version}}
@@ -18,16 +28,19 @@ signs:
     args: ["sign-blob", "--key=cosign.key", "--output=${signature}", "${artifact}"]
     artifacts: all
 archives:
-  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
-    replacements:
-      linux: Linux
-      386: i386
-      amd64: x86_64
-      darwin: macOS
-      windows: Windows
+  - name_template: >-
+      {{- .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "linux" }}Linux
+      {{- else if eq .Arch "386" }}i386
+      {{- else if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "darwin" }}macOS
+      {{- else if eq .Arch "windows" }}Windows
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end -}}
     format_overrides:
-     - goos: windows
-       format: zip
+      - goos: windows
+        format: zip
 checksum:
   name_template: 'checksums.txt'
 snapshot:
