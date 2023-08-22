@@ -1,0 +1,8 @@
+{
+  "from_default_changed_by_mapi_json": "changed by mapi.json",
+  "from_release_changed_by_mapi_json": "changed by mapi.json",
+
+  "from_mapi_will_not_change": "unchanging value",
+  "from_mapi_changed_by_instance_json": "",
+  "env_credentials": "nonprod"
+}

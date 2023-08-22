@@ -1,0 +1,9 @@
+      - deploy-app-version:
+          name: deploy metrics-server update to {{.role}}
+          role: {{.role}}
+          context: *context
+          env-credentials: {{.env_credentials}}
+          after-deploy-steps:
+            - test-app
+          filters: {{.filter}}
+          {{.lastjob}}

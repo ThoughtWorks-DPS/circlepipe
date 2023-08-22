@@ -1,0 +1,15 @@
+      - terraform/apply:
+          name: apply {{.instance}} change
+          context: *context
+          shell: op run --env-file op.{{.env_credentials}}.env -- /bin/bash -eo pipefail
+          workspace: {{.instance}}
+          before-terraform:
+            - set-environment:
+                instance-name: {{.instance}}
+                env-credentials: {{.env_credentials}}
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: {{.instance}}
+          requires:
+            - {{.approvaljobname}}
+          filters: {{.filter}}

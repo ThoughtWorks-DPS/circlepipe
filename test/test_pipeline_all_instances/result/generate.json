@@ -1,0 +1,160 @@
+{
+  "sandbox": {
+      "filter": "*on-push-main",
+      "deploy": [
+          "sbxdev",
+          "sbxqa",
+          "sbxmapi"
+      ],
+      "roles": {
+          "sbxdev": {
+              "deploy": [
+                  "sbxdev-us-west-2",
+                  "sbxdev-eu-west-1"
+              ],
+              "instances": {
+                  "sbxdev-us-west-2": {
+                      "from_generate_aws_region": "us-west-2",
+                      "from_generate_aws_account_id": "sbx10100000000"
+                  },
+                  "sbxdev-eu-west-1": {
+                      "from_generate_aws_region": "eu-west-1",
+                      "from_generate_aws_account_id": "sbx10100000000"
+                  }
+              }
+          },
+          "sbxqa": {
+              "deploy": [
+                  "sbxqa-us-west-2",
+                  "sbxqa-eu-west-1"
+              ],
+              "instances": {
+                  "sbxqa-us-west-2": {
+                      "from_generate_aws_region": "us-west-2",
+                      "from_generate_aws_account_id": "sqa10100000000"
+                  },
+                  "sbxqa-eu-west-1": {
+                      "from_generate_aws_region": "eu-west-1",
+                      "from_generate_aws_account_id": "sqa10100000000"
+                  }
+              }
+          },
+          "sbxmapi": {
+              "deploy": [
+                  "sbxmapi-us-west-2"
+              ],
+              "instances": {
+                  "sbxmapi-us-west-2": {
+                      "from_generate_aws_region": "us-west-2",
+                      "from_generate_aws_account_id": "mapi10100000000"
+                  }
+              }
+          }
+      }
+  },
+  "release": {
+      "filter": "*on-tag-main",
+      "deploy": [
+          "preview",
+          "nonprod",
+          "prod",
+          "mapi"
+      ],
+      "roles": {
+          "preview": {
+              "deploy": [
+                  "preview-us-west-2",
+                  "preview-us-east-2",
+                  "preview-eu-west-1",
+                  "preview-eu-central-1"
+              ],
+              "instances": {
+                  "preview-us-west-2": {
+                      "from_generate_aws_region": "us-west-2",
+                      "from_generate_aws_account_id": "preview20100000000"
+                  },
+                  "preview-us-east-2": {
+                      "from_generate_aws_region": "us-east-2",
+                      "from_generate_aws_account_id": "preview20100000000"
+                  },
+                  "preview-eu-west-1": {
+                      "from_generate_aws_region": "eu-west-1",
+                      "from_generate_aws_account_id": "preview20100000000"
+                  },
+                  "preview-eu-central-1": {
+                      "from_generate_aws_region": "eu-central-1",
+                      "from_generate_aws_account_id": "preview20100000000"
+                  }
+              }
+          },
+          "nonprod": {
+              "deploy": [
+                  "nonprod-us-west-2",
+                  "nonprod-us-east-2",
+                  "nonprod-eu-west-1",
+                  "nonprod-eu-central-1"
+              ],
+              "instances": {
+                  "nonprod-us-west-2": {
+                      "from_generate_aws_region": "us-west-2",
+                      "from_generate_aws_account_id": "nonprod20100000000"
+                  },
+                  "nonprod-us-east-2": {
+                      "from_generate_aws_region": "us-east-2",
+                      "from_generate_aws_account_id": "nonprod20100000000"
+                  },
+                  "nonprod-eu-west-1": {
+                      "from_generate_aws_region": "eu-west-1",
+                      "from_generate_aws_account_id": "nonprod10100000000"
+                  },
+                  "nonprod-eu-central-1": {
+                      "from_generate_aws_region": "eu-central-1",
+                      "from_generate_aws_account_id": "nonprod10100000000"
+                  }
+              }
+          },
+          "prod": {
+              "deploy": [
+                  "prod-us-west-2",
+                  "prod-us-east-2",
+                  "prod-eu-west-1",
+                  "prod-eu-central-1"
+              ],
+              "instances": {
+                  "prod-us-west-2": {
+                      "from_generate_aws_region": "us-west-2",
+                      "from_generate_aws_account_id": "prod30100000000"
+                  },
+                  "prod-us-east-2": {
+                      "from_generate_aws_region": "us-east-2",
+                      "from_generate_aws_account_id": "prod30100000000"
+                  },
+                  "prod-eu-west-1": {
+                      "from_generate_aws_region": "eu-west-1",
+                      "from_generate_aws_account_id": "prod30100000000"
+                  },
+                  "prod-eu-central-1": {
+                      "from_generate_aws_region": "eu-central-1",
+                      "from_generate_aws_account_id": "prod30100000000"
+                  }
+              }
+          },
+          "mapi": {
+              "deploy": [
+                  "mapi-us-west-2",
+                  "mapi-eu-west-1"
+              ],
+              "instances": {
+                  "mapi-us-west-2": {
+                      "from_generate_aws_region": "us-west-2",
+                      "from_generate_aws_account_id": "mapi30100000000"
+                  },
+                  "mapi-eu-west-1": {
+                      "from_generate_aws_region": "eu-west-1",
+                      "from_generate_aws_account_id": "mapi30100000000"
+                  }
+              }
+          }
+      }
+  }
+}

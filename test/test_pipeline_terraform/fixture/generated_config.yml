@@ -1,0 +1,687 @@
+version: 2.1
+
+
+# =================== global config
+
+orbs:
+  continuation: circleci/continuation@0.4.0
+  terraform: twdps/terraform@0.15.0
+  op: twdps/onepassword@1.0.0
+  do: twdps/pipeline-events@2.0.0
+
+globals:
+  - &context empc-lab
+  - &executor-image twdps/circleci-infra-aws:alpine-4.15.0
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+on-tag-main: &on-tag-main
+  branches:
+    ignore: /.*/
+  tags:
+    only: /.*/
+
+# ===================================
+
+commands:
+
+  set-environment:
+    description: set environment variables or create credential files from templates
+    parameters:
+      static:
+        description: set-environment for static-analysis-only run
+        type: boolean
+        default: false
+      env-credentials:
+        description: identifier for op.*.env file
+        type: string
+      instance-name:
+        description: cluster role instance and tf workspace name
+        type: string
+        default: ""
+      release-pipeline-name:
+        description: name of the release pipeline to generate from multi-regional release, global json file (not needed for static=true)
+        type: string
+        default: ""
+    steps:
+      - op/env:
+          env-file: op.<< parameters.env-credentials >>.env
+      - run:
+          name: set ~/.terraformrc
+          command: op inject -i tpl/terraformrc.tpl -o ~/.terraformrc
+      - unless:
+          condition: << parameters.static >>
+          steps:
+            - restore_cache:
+                name: restore circlecigen generated tfvars
+                keys:
+                  - circlecigen-tfvars-{{ .Revision }}-<< parameters.release-pipeline-name >>
+            - run:
+                name: set << parameters.instance-name >> role instance environment settings (tfvars)
+                command: op inject -i environments/<< parameters.instance-name >>.tfvars.json -o << parameters.instance-name >>.auto.tfvars.json
+
+  run-inspec-tests:
+    description: run inspec aws configuration tests
+    parameters:
+      instance-name:
+        description: tf workspace name
+        type: string
+    steps:
+      - run:
+          name: run inspec tests
+          environment:
+            WORKSPACE: <<parameters.instance-name>>
+          command: bash scripts/run_inspec_integration_tests.sh << parameters.instance-name >>
+
+jobs:
+
+  launch-dynamic-pipeline:
+    # can not use in generated pipelines
+    parameters:
+      release-pipeline-name:
+        description: name of the release pipeline generated from multi-regional release
+        type: string
+      custom-template-file:
+        description: Custom CircleCI template file to use for pipeline generation
+        type: string
+        default: ""
+    executor: continuation/default
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: install needed packages
+          command: |
+            sudo apt-get update && sudo apt-get install python3-pip && pip install circlecigen==0.0.9
+            curl -L https://cache.agilebits.com/dist/1P/op2/pkg/v2.18.0-beta.01/op_linux_amd64_v2.18.0-beta.01.zip -o op.zip
+            unzip -o op.zip && sudo mv op /usr/local/bin/op
+      - run:
+          name: generate continuation pipeline
+          command: |
+            op read op://empc-lab/psk-platform-global-env-values/control-plane-deployment | base64 -d > environments/multi.json
+            circlepipe << parameters.release-pipeline-name >> --Pipe
+      - save_cache:
+          name: persist circlecigen generated files between workflows
+          key: circlecigen-tfvars-{{ .Revision }}-<< parameters.release-pipeline-name >>
+          paths:
+            - environments/
+      - continuation/continue:
+          configuration_path: .circleci/generated_config.yml
+
+  integration-tests:
+    description: Recurring job to run pipeline integration tests and detect aws configuration drift
+    docker:
+      - image: *executor-image
+    parameters:
+      instance_name:
+        description: the VPC instance (and tfcloud workspace name) to run tests against
+        type: string
+      env-credentials:
+        description: identifier for op.*.env file
+        type: string
+    steps:
+      - checkout
+      - set-environment:
+          instance_name: << parameters.instance_name >>
+          env-credentials: << parameters.env-credentials >>
+      - run-inspec-tests:
+          instance-name: << parameters.instance_name >>
+
+
+workflows:
+  version: 2
+
+  continuation-generated-workflow:
+    jobs:
+      - terraform/plan:
+          name: plan preview-us-west-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: preview-us-west-2
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-preview-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: preview-us-west-2
+                env-credentials: nonprod
+          filters: *on-tag-main
+
+
+
+      - terraform/plan:
+          name: plan preview-us-east-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: preview-us-east-2
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-preview-us-east-2
+          before-terraform:
+            - set-environment:
+                instance-name: preview-us-east-2
+                env-credentials: nonprod
+          filters: *on-tag-main
+
+
+
+      - terraform/plan:
+          name: plan preview-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: preview-eu-west-1
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-preview-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: preview-eu-west-1
+                env-credentials: nonprod
+          filters: *on-tag-main
+
+
+
+      - terraform/plan:
+          name: plan preview-eu-central-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: preview-eu-central-1
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-preview-eu-central-1
+          before-terraform:
+            - set-environment:
+                instance-name: preview-eu-central-1
+                env-credentials: nonprod
+          filters: *on-tag-main
+
+
+
+
+      - approve preview changes:
+          type: approval
+          requires:
+            - plan preview-us-west-2 change
+            - plan preview-us-east-2 change
+            - plan preview-eu-west-1 change
+            - plan preview-eu-central-1 change
+          filters: *on-tag-main
+
+      - terraform/apply:
+          name: apply preview-us-west-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: preview-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: preview-us-west-2
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: preview-us-west-2
+          requires:
+            - approve preview changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply preview-us-east-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: preview-us-east-2
+          before-terraform:
+            - set-environment:
+                instance-name: preview-us-east-2
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: preview-us-east-2
+          requires:
+            - approve preview changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply preview-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: preview-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: preview-eu-west-1
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: preview-eu-west-1
+          requires:
+            - approve preview changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply preview-eu-central-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: preview-eu-central-1
+          before-terraform:
+            - set-environment:
+                instance-name: preview-eu-central-1
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: preview-eu-central-1
+          requires:
+            - approve preview changes
+          filters: *on-tag-main
+
+
+      - terraform/plan:
+          name: plan nonprod-us-west-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: nonprod-us-west-2
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-nonprod-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-us-west-2
+                env-credentials: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview changes
+
+
+      - terraform/plan:
+          name: plan nonprod-us-east-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: nonprod-us-east-2
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-nonprod-us-east-2
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-us-east-2
+                env-credentials: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview changes
+
+
+      - terraform/plan:
+          name: plan nonprod-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: nonprod-eu-west-1
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-nonprod-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-eu-west-1
+                env-credentials: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview changes
+
+
+      - terraform/plan:
+          name: plan nonprod-eu-central-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: nonprod-eu-central-1
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-nonprod-eu-central-1
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-eu-central-1
+                env-credentials: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview changes
+
+
+
+      - approve nonprod changes:
+          type: approval
+          requires:
+            - apply preview-us-west-2 change
+            - apply preview-us-east-2 change
+            - apply preview-eu-west-1 change
+            - apply preview-eu-central-1 change
+            - plan nonprod-us-west-2 change
+            - plan nonprod-us-east-2 change
+            - plan nonprod-eu-west-1 change
+            - plan nonprod-eu-central-1 change
+          filters: *on-tag-main
+
+      - terraform/apply:
+          name: apply nonprod-us-west-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: nonprod-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-us-west-2
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: nonprod-us-west-2
+          requires:
+            - approve nonprod changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply nonprod-us-east-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: nonprod-us-east-2
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-us-east-2
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: nonprod-us-east-2
+          requires:
+            - approve nonprod changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply nonprod-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: nonprod-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-eu-west-1
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: nonprod-eu-west-1
+          requires:
+            - approve nonprod changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply nonprod-eu-central-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: nonprod-eu-central-1
+          before-terraform:
+            - set-environment:
+                instance-name: nonprod-eu-central-1
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: nonprod-eu-central-1
+          requires:
+            - approve nonprod changes
+          filters: *on-tag-main
+
+
+      - terraform/plan:
+          name: plan prod-us-west-2 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: prod-us-west-2
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-prod-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: prod-us-west-2
+                env-credentials: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod changes
+
+
+      - terraform/plan:
+          name: plan prod-us-east-2 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: prod-us-east-2
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-prod-us-east-2
+          before-terraform:
+            - set-environment:
+                instance-name: prod-us-east-2
+                env-credentials: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod changes
+
+
+      - terraform/plan:
+          name: plan prod-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: prod-eu-west-1
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-prod-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: prod-eu-west-1
+                env-credentials: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod changes
+
+
+      - terraform/plan:
+          name: plan prod-eu-central-1 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: prod-eu-central-1
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-prod-eu-central-1
+          before-terraform:
+            - set-environment:
+                instance-name: prod-eu-central-1
+                env-credentials: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod changes
+
+
+
+      - approve prod changes:
+          type: approval
+          requires:
+            - apply nonprod-us-west-2 change
+            - apply nonprod-us-east-2 change
+            - apply nonprod-eu-west-1 change
+            - apply nonprod-eu-central-1 change
+            - plan prod-us-west-2 change
+            - plan prod-us-east-2 change
+            - plan prod-eu-west-1 change
+            - plan prod-eu-central-1 change
+          filters: *on-tag-main
+
+      - terraform/apply:
+          name: apply prod-us-west-2 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          workspace: prod-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: prod-us-west-2
+                env-credentials: prod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: prod-us-west-2
+          requires:
+            - approve prod changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply prod-us-east-2 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          workspace: prod-us-east-2
+          before-terraform:
+            - set-environment:
+                instance-name: prod-us-east-2
+                env-credentials: prod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: prod-us-east-2
+          requires:
+            - approve prod changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply prod-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          workspace: prod-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: prod-eu-west-1
+                env-credentials: prod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: prod-eu-west-1
+          requires:
+            - approve prod changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply prod-eu-central-1 change
+          context: *context
+          shell: op run --env-file op.prod.env -- /bin/bash -eo pipefail
+          workspace: prod-eu-central-1
+          before-terraform:
+            - set-environment:
+                instance-name: prod-eu-central-1
+                env-credentials: prod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: prod-eu-central-1
+          requires:
+            - approve prod changes
+          filters: *on-tag-main
+
+
+      - terraform/plan:
+          name: plan mapi-us-west-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: mapi-us-west-2
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-mapi-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: mapi-us-west-2
+                env-credentials: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve prod changes
+
+
+      - terraform/plan:
+          name: plan mapi-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: mapi-eu-west-1
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-mapi-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: mapi-eu-west-1
+                env-credentials: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve prod changes
+
+
+
+      - approve mapi changes:
+          type: approval
+          requires:
+            - apply prod-us-west-2 change
+            - apply prod-us-east-2 change
+            - apply prod-eu-west-1 change
+            - apply prod-eu-central-1 change
+            - plan mapi-us-west-2 change
+            - plan mapi-eu-west-1 change
+          filters: *on-tag-main
+
+      - terraform/apply:
+          name: apply mapi-us-west-2 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: mapi-us-west-2
+          before-terraform:
+            - set-environment:
+                instance-name: mapi-us-west-2
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: mapi-us-west-2
+          requires:
+            - approve mapi changes
+          filters: *on-tag-main
+
+
+      - terraform/apply:
+          name: apply mapi-eu-west-1 change
+          context: *context
+          shell: op run --env-file op.nonprod.env -- /bin/bash -eo pipefail
+          workspace: mapi-eu-west-1
+          before-terraform:
+            - set-environment:
+                instance-name: mapi-eu-west-1
+                env-credentials: nonprod
+          after-terraform:
+            - run-inspec-tests:
+                instance-name: mapi-eu-west-1
+          requires:
+            - approve mapi changes
+          filters: *on-tag-main

@@ -1,0 +1,8 @@
+{
+  "from_default_changed_by_prod_json": "changed by prod.json",
+  "from_release_changed_by_prod_json": "changed by prod.json",
+
+  "from_prod_will_not_change": "unchanging value",
+  "from_prod_changed_by_instance_json": "",
+  "env_credentials": "prod"
+}

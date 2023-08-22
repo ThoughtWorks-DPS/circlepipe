@@ -1,0 +1,5 @@
+from_default_changed_by_nonprod_json: changed by nonprod.json
+from_release_changed_by_nonprod_json: changed by nonprod.json
+from_nonprod_will_not_change: unchanging value
+from_nonprod_changed_by_instance_json: ''
+env_credentials: nonprod

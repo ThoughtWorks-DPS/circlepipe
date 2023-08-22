@@ -1,0 +1,7 @@
+{
+  "from_default_changed_by_instance_json": "changed by prod-us-west-2.json",
+  "from_release_changed_by_instance_json": "changed by prod-us-west-2.json",
+  "from_prod_changed_by_instance_json": "changed by prod-us-west-2.json",
+
+  "from_prod_us_west_2": "unchanging value"
+}

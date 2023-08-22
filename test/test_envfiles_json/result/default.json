@@ -1,0 +1,9 @@
+{
+  "from_default_will_not_change": "unchanging value",
+  "from_default_changed_by_release_json": "",
+  "from_default_changed_by_preview_json": "",
+  "from_default_changed_by_nonprod_json": "",
+  "from_default_changed_by_prod_json": "",
+  "from_default_changed_by_mapi_json": "",
+  "from_default_changed_by_instance_json": ""
+}

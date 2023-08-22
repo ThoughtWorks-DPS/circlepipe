@@ -1,0 +1,7 @@
+{
+  "from_default_changed_by_instance_json": "changed by preview-eu-central-1.json",
+  "from_release_changed_by_instance_json": "changed by preview-eu-central-1.json",
+  "from_preview_changed_by_instance_json": "changed by preview-eu-central-1.json",
+
+  "from_preview_eu_central_1": "unchanging value"
+}

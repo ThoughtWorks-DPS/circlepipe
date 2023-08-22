@@ -1,0 +1,17 @@
+env_credentials: nonprod
+from_default_changed_by_instance_json: changed by nonprod-us-west-2.json
+from_default_changed_by_nonprod_json: changed by nonprod.json
+from_default_changed_by_preview_json: ""
+from_default_changed_by_prod_json: ""
+from_default_changed_by_release_json: changed by release.json
+from_default_will_not_change: unchanging value
+from_generate_aws_account_id: nonprod20100000000
+from_generate_aws_region: us-west-2
+from_nonprod_changed_by_instance_json: changed by nonprod-us-west-2.json
+from_nonprod_us_west_2: unchanging value
+from_nonprod_will_not_change: unchanging value
+from_release_changed_by_instance_json: changed by nonprod-us-west-2.json
+from_release_changed_by_nonprod_json: changed by nonprod.json
+from_release_changed_by_preview_json: ""
+from_release_changed_by_prod_json: ""
+from_release_will_not_change: unchanging value

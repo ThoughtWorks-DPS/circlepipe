@@ -1,0 +1,199 @@
+version: 2.1
+
+
+# =================== global config
+
+orbs:
+  continuation: circleci/continuation@0.4.0
+  op: twdps/onepassword@1.0.0
+  do: twdps/pipeline-events@2.0.0
+
+globals:
+  - &context empc-lab
+  - &executor-image twdps/circleci-infra-aws:alpine-4.15.0
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+on-tag-main: &on-tag-main
+  branches:
+    ignore: /.*/
+  tags:
+    only: /.*/
+
+# ===================================
+
+commands:
+
+  set-environment:
+    description: set environment variables or create credential files from templates
+    parameters:
+      static:
+        description: set-environment for static-analysis-only run
+        type: boolean
+        default: false
+      env-credentials:
+        description: identifier for op.*.env file
+        type: string
+      release-pipeline-name:
+        description: name of the release pipeline to generate from multi-regional release, global json file (not needed for static=true)
+        type: string
+        default: ""
+    steps:
+      - op/env:
+          env-file: op.<< parameters.env-credentials >>.env
+      - unless:
+          condition: << parameters.static >>
+          steps:
+            - restore_cache:
+                name: restore circlecigen generated tfvars
+                keys:
+                  - circlecigen-tfvars-{{ .Revision }}-<< parameters.release-pipeline-name >>
+
+  test-app:
+    description: example assumes there is some way to test multiple instance without multi-instance pipeline
+    steps:
+      - run:
+          name: fake command
+          command: echo "here"
+jobs:
+
+  launch-dynamic-pipeline:
+    # can not use in generated pipelines
+    parameters:
+      release-pipeline-name:
+        description: name of the release pipeline generated from multi-regional release
+        type: string
+    executor: continuation/default
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: install needed packages
+          command: |
+            sudo apt-get update && sudo apt-get install python3-pip && pip install circlecigen==0.0.9
+            curl -L https://cache.agilebits.com/dist/1P/op2/pkg/v2.18.0-beta.01/op_linux_amd64_v2.18.0-beta.01.zip -o op.zip
+            unzip -o op.zip && sudo mv op /usr/local/bin/op
+      - run:
+          name: generate continuation pipeline
+          command: |
+            op read op://empc-lab/psk-platform-global-env-values/control-plane-deployment | base64 -d > environments/multi.json
+            circlepipe << parameters.release-pipeline-name >> --Pipe
+      - save_cache:
+          name: persist circlecigen generated files between workflows
+          key: circlecigen-tfvars-{{ .Revision }}-<< parameters.release-pipeline-name >>
+          paths:
+            - environments/
+      - continuation/continue:
+          configuration_path: .circleci/generated_config.yml
+
+  deploy-app-version:
+    description: Update image version in app-of-apps overlay for specified role
+    docker:
+      - image: *executor-image
+    parameters:
+      role:
+        description: the VPC instance (and tfcloud workspace name) to run tests against
+        type: string
+      env-credentials:
+        description: identifier for op.*.env file
+        type: string
+      before-deploy-steps:
+        description: Optional steps to run after running terraform plan
+        type: steps
+        default: [ ]
+      after-deploy-steps:
+        description: Optional steps to run after running terraform plan
+        type: steps
+        default: [ ]
+    steps:
+      - checkout
+      - set-environment:
+          env-credentials: << parameters.env-credentials >>
+      - run:
+          name: fake command representing 1) create overlay template and 2) deploy to repo
+          command: echo "here"
+
+
+workflows:
+  version: 2
+
+  continuation-generated-workflow:
+    jobs:
+      - deploy-app-version:
+          name: deploy metrics-server update to preview
+          role: preview
+          context: *context
+          env-credentials: op.nonprod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+
+
+
+
+      - approve preview deployment:
+          type: approval
+          requires:
+            - deploy metrics-server update to preview
+          filters: *on-tag-main
+
+      - deploy-app-version:
+          name: deploy metrics-server update to nonprod
+          role: nonprod
+          context: *context
+          env-credentials: op.nonprod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+          requires:
+            - approve preview deployment
+
+
+
+      - approve nonprod deployment:
+          type: approval
+          requires:
+            - deploy metrics-server update to nonprod
+          filters: *on-tag-main
+
+      - deploy-app-version:
+          name: deploy metrics-server update to prod
+          role: prod
+          context: *context
+          env-credentials: op.prod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+          requires:
+            - approve nonprod deployment
+
+
+
+      - approve prod deployment:
+          type: approval
+          requires:
+            - deploy metrics-server update to prod
+          filters: *on-tag-main
+
+      - deploy-app-version:
+          name: deploy metrics-server update to mapi
+          role: mapi
+          context: *context
+          env-credentials: op.prod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+          requires:
+            - approve prod deployment
+
+
+
+      - approve mapi deployment:
+          type: approval
+          requires:
+            - deploy metrics-server update to mapi
+          filters: *on-tag-main

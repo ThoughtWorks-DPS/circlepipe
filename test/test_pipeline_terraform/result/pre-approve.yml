@@ -1,0 +1,16 @@
+      - terraform/plan:
+          name: plan {{.instance}} change
+          context: *context
+          shell: op run --env-file op.{{.env_credentials}}.env -- /bin/bash -eo pipefail
+          executor-image: *executor-image
+          static-analysis: false
+          workspace: {{.instance}}
+          tfc-local-execution-mode: true
+          tfc-organization: twdps
+          tfc-workspace-name: psk-aws-platform-vpc-{{.instance}}
+          before-terraform:
+            - set-environment:
+                instance-name: {{.instance}}
+                env-credentials: {{.env_credentials}}
+          filters: {{.filter}}
+          {{.priorapprovalrequired}}
