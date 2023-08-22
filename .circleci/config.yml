@@ -45,10 +45,6 @@ jobs:
           os: Ubuntu
       - op/env
       - run:
-          name: interpolate config.go.tpl
-          command: |
-            op inject -i tpl/config.go.tpl -o cmd/config.go
-      - run:
           name: static code analysis
           command: |
             go install honnef.co/go/tools/cmd/staticcheck@v0.3.3
@@ -133,7 +129,7 @@ jobs:
 workflows:
   version: 2
 
-  push-commits:
+  dev build:
     jobs:
       - static-analysis:
           name: run static code analysis
