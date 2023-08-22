@@ -30,10 +30,6 @@ executors:
     docker:
       - image: cimg/go:1.19.4
 
-  linux-i386-agent:
-    docker:
-      - image: i386/buildpack-deps
-
 jobs:
 
   static-analysis:
@@ -83,35 +79,38 @@ jobs:
             mkdir release-assets && cp dist/*.tar.* release-assets && cp dist/*.zip release-assets
       - run:
           name: validate signature
-          command: cosign verify-blob --key cosign.pub --signature release-assets/circlepipe_Linux_i386.tar.gz.sig release-assets/circlepipe_Linux_i386.tar.gz
+          command: cosign verify-blob --key cosign.pub --signature release-assets/circlepipe_Linux_amd64.tar.gz.sig release-assets/circlepipe_Linux_amd64.tar.gz
       - persist_to_workspace:
           root: ~/
           paths:
             - project/release-assets
 
   smoke-test-linux:
-    executor: linux-i386-agent
+    machine:
+      image: ubuntu-2204:2023.07.1
+    resource_class: arm.medium
     steps:
       - checkout
       - attach_workspace:
           at: ~/
       - run:
-          name: smoketest i386 linux version
+          name: smoketest arm64 linux version
           command: |
-            tar -xvzf release-assets/circlepipe_Linux_i386.tar.gz
+            tar -xvzf release-assets/circlepipe_Linux_arm64.tar.gz
             ./circlepipe version | grep ${CIRCLE_TAG}
 
   smoke-test-macos:
     macos:
       xcode: 14.3.1
+    resource_class: macos.m1.medium.gen1
     steps:
       - checkout
       - attach_workspace:
           at: ~/
       - run:
-          name: smoketest MacOS linux version
+          name: smoketest MacOS apple silicon version
           command: |
-            tar -xvzf release-assets/circlepipe_macOS_x86_64.tar.gz
+            tar -xvzf release-assets/circlepipe_macOS_arm64.tar.gz
             ./circlepipe version | grep ${CIRCLE_TAG}
 
   smoke-test-win:
@@ -125,7 +124,7 @@ jobs:
       - run:
           name: smoke test windows version
           command: |
-            unzip -u release-assets/circlepipe_Windows_x86_64.zip
+            unzip -u release-assets/circlepipe_Windows_amd64.zip
             ./circlepipe version | grep ${CIRCLE_TAG}
 
 workflows:
