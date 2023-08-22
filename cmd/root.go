@@ -9,7 +9,6 @@ import (
 
 var cfgFile string
 var Version = "snapshot"
-// var pipeControl map[string]interface{}
 
 var rootCmd = &cobra.Command{
   Use:   "circlepipe",
