@@ -47,12 +47,12 @@ jobs:
       - run:
           name: static code analysis
           command: |
-            go install honnef.co/go/tools/cmd/staticcheck@v0.3.3
+            go install honnef.co/go/tools/cmd/staticcheck@v0.4.5
             staticcheck ./...
       - run:
           name: lint
           command: |
-            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.46.2
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.54.2
             golangci-lint run ./...
       - run:
           name: functional tests
