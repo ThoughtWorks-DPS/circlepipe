@@ -10,12 +10,9 @@ builds:
       - darwin
       - windows
     goarch:
-      - '386'
       - amd64
       - arm64
     ignore:
-      - goos: darwin
-        goarch: '386'
       - goos: windows
         goarch: arm64
     binary: circlepipe
@@ -28,15 +25,7 @@ signs:
     artifacts: all
 archives:
   - name_template: >-
-      {{- .ProjectName }}_
-      {{- title .Os }}_
-      {{- if eq .Arch "linux" }}Linux
-      {{- else if eq .Arch "386" }}i386
-      {{- else if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "darwin" }}macOS
-      {{- else if eq .Arch "windows" }}Windows
-      {{- else }}{{ .Arch }}{{ end }}
-      {{- if .Arm }}v{{ .Arm }}{{ end -}}
+      {{- .ProjectName }}_{{- title .Os }}_{{ .Arch }}
     format_overrides:
       - goos: windows
         format: zip

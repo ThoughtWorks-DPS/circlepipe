@@ -83,7 +83,7 @@ jobs:
             mkdir release-assets && cp dist/*.tar.* release-assets && cp dist/*.zip release-assets
       - run:
           name: validate signature
-          command: cosign verify-blob -key cosign.pub -signature release-assets/circlepipe_Linux_i386.tar.gz.sig release-assets/circlepipe_Linux_i386.tar.gz
+          command: cosign verify-blob --key cosign.pub --signature release-assets/circlepipe_Linux_i386.tar.gz.sig release-assets/circlepipe_Linux_i386.tar.gz
       - persist_to_workspace:
           root: ~/
           paths:
