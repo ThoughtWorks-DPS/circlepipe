@@ -1,0 +1,34 @@
+project_name: circlepipe
+before:
+  hooks:
+    - go mod download
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    binary: circlepipe
+    ldflags:
+      - -s -w -X circlepipe/cmd.Version={{.Version}}
+signs:
+  - cmd: cosign
+    stdin: '{{ .Env.COSIGN_PWD }}'
+    args: ["sign-blob", "--key=cosign.key", "--output=${signature}", "${artifact}"]
+    artifacts: all
+archives:
+  - name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    replacements:
+      linux: Linux
+      386: i386
+      amd64: x86_64
+      darwin: macOS
+      windows: Windows
+    format_overrides:
+     - goos: windows
+       format: zip
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"

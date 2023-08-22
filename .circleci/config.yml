@@ -1,0 +1,161 @@
+---
+version: 2.1
+
+orbs:
+  op: twdps/onepassword@1.0.0
+  cosign: twdps/cosign@0.1.0
+  win: circleci/windows@4.1.1
+
+# =================================== global pipeline parameters
+
+globals:
+  - &context empc-lab
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+on-tag-release: &on-tag-release
+  branches:
+    ignore: /.*/
+  tags:
+    only:
+      - /^([0-9]+(\.[0-9]+)+)-rc.[0-9]+$/
+      - /^((([0-9]+)\.([0-9]+)\.([0-9]+))?)$/
+
+executors:
+  go-builder:
+    docker:
+      - image: cimg/go:1.19.4
+
+  linux-i386-agent:
+    docker:
+      - image: i386/buildpack-deps
+
+jobs:
+
+  static-analysis:
+    executor: go-builder
+    steps:
+      - checkout
+      - setup_remote_docker
+      - op/install-op:
+          os: Ubuntu
+      - op/env
+      - run:
+          name: interpolate config.go.tpl
+          command: |
+            op inject -i tpl/config.go.tpl -o cmd/config.go
+      - run:
+          name: static code analysis
+          command: |
+            go install honnef.co/go/tools/cmd/staticcheck@v0.3.3
+            staticcheck ./...
+      - run:
+          name: lint
+          command: |
+            curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.46.2
+            golangci-lint run ./...
+      - run:
+          name: functional tests
+          command: go test -v ./cmd
+
+  release:
+    executor: go-builder
+    steps:
+      - checkout
+      - setup_remote_docker
+      - op/install-op:
+          os: Ubuntu
+      - op/env
+      - cosign/install
+      - run:
+          name: fetch keys for signing
+          command: |
+            echo "op://empc-lab/svc-cosign-private-key/notesPlain" > cosign.key.env
+            echo "op://empc-lab/svc-cosign-public-key/notesPlain" > cosign.pub.env
+            op inject -i cosign.key.env -o cosign.key
+            op inject -i cosign.pub.env -o cosign.pub
+      - run:
+          name: Use goreleaser to build and publish executables to github packages
+          command: |
+            curl -sL https://git.io/goreleaser | bash
+            mkdir release-assets && cp dist/*.tar.* release-assets && cp dist/*.zip release-assets
+      - run:
+          name: validate signature
+          command: cosign verify-blob -key cosign.pub -signature release-assets/circlepipe_Linux_i386.tar.gz.sig release-assets/circlepipe_Linux_i386.tar.gz
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - project/release-assets
+
+  smoke-test-linux:
+    executor: linux-i386-agent
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: smoketest i386 linux version
+          command: |
+            tar -xvzf release-assets/circlepipe_Linux_i386.tar.gz
+            ./circlepipe version | grep ${CIRCLE_TAG}
+
+  smoke-test-macos:
+    macos:
+      xcode: 14.3.1
+    steps:
+      - checkout
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: smoketest MacOS linux version
+          command: |
+            tar -xvzf release-assets/circlepipe_macOS_x86_64.tar.gz
+            ./circlepipe version | grep ${CIRCLE_TAG}
+
+  smoke-test-win:
+    executor:
+      name: win/default
+      shell: bash.exe
+    steps:
+      - checkout
+      - attach_workspace:
+            at: ~/
+      - run:
+          name: smoke test windows version
+          command: |
+            unzip -u release-assets/circlepipe_Windows_x86_64.zip
+            ./circlepipe version | grep ${CIRCLE_TAG}
+
+workflows:
+  version: 2
+
+  push-commits:
+    jobs:
+      - static-analysis:
+          name: run static code analysis
+          context: *context
+          filters: *on-push-main
+
+  release:
+    jobs:
+      - release:
+          name: publish (pre)release
+          context: *context
+          filters: *on-tag-release
+
+      - smoke-test-linux:
+          requires:
+            - publish (pre)release
+          filters: *on-tag-release
+      - smoke-test-macos:
+          requires:
+            - publish (pre)release
+          filters: *on-tag-release
+      - smoke-test-win:
+          requires:
+            - publish (pre)release
+          filters: *on-tag-release
