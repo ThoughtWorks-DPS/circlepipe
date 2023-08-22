@@ -13,3 +13,4 @@ test/test_pipeline_role_only/result/generated_config.yml
 test/test_pipeline_role_only/result/*.tfvars.json
 
 .python-version
+cosign.*
