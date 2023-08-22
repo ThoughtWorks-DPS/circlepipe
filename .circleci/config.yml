@@ -56,7 +56,9 @@ jobs:
             golangci-lint run ./...
       - run:
           name: functional tests
-          command: go test -v ./cmd
+          command: |
+            curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | sudo bash
+            go test -v ./cmd
 
   release:
     executor: go-builder
