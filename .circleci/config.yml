@@ -101,7 +101,7 @@ jobs:
 
   smoke-test-macos:
     macos:
-      xcode: 14.2.0
+      xcode: 14.3.1
     #resource_class: macos.m1.medium.gen1
     steps:
       - checkout
@@ -110,7 +110,7 @@ jobs:
       - run:
           name: smoketest MacOS apple silicon version
           command: |
-            tar -xvzf release-assets/circlepipe_macOS_amd64.tar.gz
+            tar -xvzf release-assets/circlepipe_Darwin_amd64.tar.gz
             ./circlepipe version | grep ${CIRCLE_TAG}
 
   smoke-test-win:
