@@ -2,7 +2,7 @@
 version: 2.1
 
 orbs:
-  op: twdps/onepassword@1.2.0
+  op: twdps/onepassword@1.0.0
   cosign: twdps/cosign@0.1.0
   win: circleci/windows@4.1.1
 
