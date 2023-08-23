@@ -2,7 +2,7 @@
 version: 2.1
 
 orbs:
-  op: twdps/onepassword@1.0.0
+  op: twdps/onepassword@1.2.0
   cosign: twdps/cosign@0.1.0
   win: circleci/windows@4.1.1
 
@@ -25,6 +25,7 @@ on-tag-release: &on-tag-release
       - /^([0-9]+(\.[0-9]+)+)-rc.[0-9]+$/
       - /^((([0-9]+)\.([0-9]+)\.([0-9]+))?)$/
 
+# could use our own go builder that has all the additional tools already baked in
 executors:
   go-builder:
     docker:
@@ -32,7 +33,7 @@ executors:
 
 jobs:
 
-  static-analysis:
+  static analysis and functional tests:
     executor: go-builder
     steps:
       - checkout
@@ -56,7 +57,7 @@ jobs:
             curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/master/install.sh | sudo bash
             go test -v ./cmd
 
-  release:
+  publish release version:
     executor: go-builder
     steps:
       - checkout
@@ -83,9 +84,9 @@ jobs:
       - persist_to_workspace:
           root: ~/
           paths:
-            - project/release-assets
+            - project/release-assets   # used by the smoke-tests
 
-  smoke-test-linux:
+  smoke-test linux arm build:
     machine:
       image: ubuntu-2204:2023.07.1
     resource_class: arm.medium
@@ -94,26 +95,25 @@ jobs:
       - attach_workspace:
           at: ~/
       - run:
-          name: smoketest arm64 linux version
+          name: check self-reported version on arm64 linux build
           command: |
             tar -xvzf release-assets/circlepipe_Linux_arm64.tar.gz
             ./circlepipe version | grep ${CIRCLE_TAG}
 
-  smoke-test-macos:
+  smoke-test macos build:
     macos:
       xcode: 14.3.1
-    #resource_class: macos.m1.medium.gen1
     steps:
       - checkout
       - attach_workspace:
           at: ~/
       - run:
-          name: smoketest MacOS apple silicon version
+          name: check self-reported version on macos build
           command: |
             tar -xvzf release-assets/circlepipe_Darwin_amd64.tar.gz
             ./circlepipe version | grep ${CIRCLE_TAG}
 
-  smoke-test-win:
+  smoke-test windows build:
     executor:
       name: win/default
       shell: bash.exe
@@ -122,7 +122,7 @@ jobs:
       - attach_workspace:
             at: ~/
       - run:
-          name: smoke test windows version
+          name: check self-reported version on windows build
           command: |
             unzip -u release-assets/circlepipe_Windows_amd64.zip
             ./circlepipe version | grep ${CIRCLE_TAG}
@@ -132,27 +132,25 @@ workflows:
 
   dev build:
     jobs:
-      - static-analysis:
-          name: run static code analysis
+      - static analysis and functional tests:
           context: *context
           filters: *on-push-main
 
   release:
     jobs:
-      - release:
-          name: publish (pre)release
+      - publish release version:
           context: *context
           filters: *on-tag-release
 
-      - smoke-test-linux:
+      - smoke-test linux arm build:
           requires:
-            - publish (pre)release
+            - publish release version
           filters: *on-tag-release
-      - smoke-test-macos:
+      - smoke-test macos build:
           requires:
-            - publish (pre)release
+            - publish release version
           filters: *on-tag-release
-      - smoke-test-win:
+      - smoke-test windows build:
           requires:
-            - publish (pre)release
+            - publish release version
           filters: *on-tag-release
