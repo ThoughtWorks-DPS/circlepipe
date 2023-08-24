@@ -15,7 +15,7 @@ The pipeline definition file defines all the pipelines you want to be able to ge
 Suppose you are part of an Engineering Platform product team where the compute featuer is built around kubernetes. For a quality, enterprise level platform this results in a k8s release pipeline that would look something like this:
 
 <div align="center">
-		<img alt="basic pipeline" src="https://raw.githubusercontent.com/ThoughtWorks-DPS/circlepipe/main/basic-ptp.png?sanitize=true" />
+		<img alt="basic pipeline" src="https://raw.githubusercontent.com/ThoughtWorks-DPS/circlepipe/main/basic-ptp.png" />
     <br />
 </div>
 
