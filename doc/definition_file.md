@@ -14,10 +14,7 @@ The pipeline definition file defines all the pipelines you want to be able to ge
 
 Suppose you are part of an Engineering Platform product team where the compute featuer is built around kubernetes. For a quality, enterprise level platform this results in a k8s release pipeline that would look something like this:
 
-<div align="center">
-		<img alt="basic pipeline" src="https://raw.githubusercontent.com/ThoughtWorks-DPS/circlepipe/main/basic-ptp.png" />
-    <br />
-</div>
+![basic path to production](images/basic-ptp.png)
 
 The platform is designed to support a global product offering. In this case this means that, as a developer-user of the platform, your production namespace (along with your other environments) actually represents namespaces in k8s clusters located in mulitiple regions around the world. As the platform product owner, the typical path-to-production for platform features
 
