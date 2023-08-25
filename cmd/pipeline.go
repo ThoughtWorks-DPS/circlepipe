@@ -88,7 +88,9 @@ var pipelineCmd = &cobra.Command{
 				fmt.Printf("      [approve] %s\n", role)
 				requiredJobs += jobRequiresLine("approve", role)
 				approvalVars := asssembleVars(filter, role, "", jobNameTemplate("approve", role), lastJob, requiredJobs, "", jobsToBeApproved, make(map[string]interface{}))
-				exitOnError(approve.Execute(outfile, approvalVars))
+				if role != viper.GetString("PipeSkipApproval") {
+					exitOnError(approve.Execute(outfile, approvalVars))
+				}
 			}
 			jobsToBeApproved = "requires:"
 
@@ -96,7 +98,7 @@ var pipelineCmd = &cobra.Command{
 			if viper.GetBool("PipeIsPost") {
 
 				// optionally, the pipelines can be built around steps that occur only per role in PipeControl
-				if viper.GetBool("PipePreRoleOnly") {
+				if viper.GetBool("PipePostRoleOnly") {
 					jobsToBeApproved += jobRequiresLine("post", role)
 					roleVars := asssembleVars(filter, role, "", jobNameTemplate("post", role), lastJob, requiredJobs, jobNameTemplate("approve", role), "", anyEnvFileValues(role))
 					exitOnError(post.Execute(outfile, roleVars))

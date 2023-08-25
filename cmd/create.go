@@ -16,6 +16,7 @@ var PipeOutFile string
 var PipeWorkflowName string
 var PipeIsApprove bool
 var PipePriorJobsRequired bool
+var PipeSkipApproval string
 var PipeIsPre bool
 var PipeIsPost bool
 var PipePreRoleOnly bool
@@ -87,6 +88,11 @@ func init() {
   createCmd.PersistentFlags().BoolVar(&PipePriorJobsRequired, "PipePriorJobsRequired", DefaultPipePriorJobsRequired, "Should post jobs require the approval?")
   if !createCmd.PersistentFlags().Lookup("PipePriorJobsRequired").Changed {
     exitOnError(viper.BindPFlag("PipePriorJobsRequired", createCmd.PersistentFlags().Lookup("PipePriorJobsRequired")))
+  }
+
+  rootCmd.PersistentFlags().StringVar(&PipeSkipApproval, "PipeSkipApproval", DefaultPipeSkipApproval, "Name of workflow in generated pipeline")
+  if !rootCmd.PersistentFlags().Lookup("PipeSkipApproval").Changed {
+    exitOnError(viper.BindPFlag("PipeSkipApproval", rootCmd.PersistentFlags().Lookup("PipeSkipApproval")))
   }
 
   createCmd.PersistentFlags().BoolVar(&PipeIsPre, "PipeIsPre", DefaultPipeIsPre, "Create pre-approval jobs?")

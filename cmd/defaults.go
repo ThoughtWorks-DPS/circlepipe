@@ -16,6 +16,8 @@ const (
 	DefaultPipeIsApprove				  = true
 	// Should jobs require the prior approval step, usually set to match PipeIsApprove
 	DefaultPipePriorJobsRequired  = true
+	// Skip approval step for this role
+	DefaultPipeSkipApproval				= ""
 
 	// Include Pre or Post jobs
 	DefaultPipeIsPre              = true

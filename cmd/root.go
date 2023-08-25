@@ -44,6 +44,7 @@ func initConfig() {
   viper.SetDefault("PipeWorkflowName", DefaultPipeWorkflowName)
   viper.SetDefault("PipeIsApprove", DefaultPipeIsApprove)
   viper.SetDefault("PipePriorJobsRequired", DefaultPipePriorJobsRequired)
+  viper.SetDefault("PipeSkipApproval", DefaultPipeSkipApproval)
   viper.SetDefault("PipePreRoleOnly", DefaultPipePreRoleOnly)
   viper.SetDefault("PipePostRoleOnly", DefaultPipePostRoleOnly)
   viper.SetDefault("PipeIsPre", DefaultPipeIsPre)
