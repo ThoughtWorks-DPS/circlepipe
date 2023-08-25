@@ -44,6 +44,11 @@ launch-dynamic-pipeline:
           curl -SLO https://github.com/ThoughtWorks-DPS/circlepipe/releases/latest/download/circlepipe_Linux_amd64.tar.gz
           tar -xzf circlepipe_Linux_amd64.tar.gz
           sudo mv circlepipe /usr/local/bin/circlepipe
+    - save_cache:
+        name: persist envfiles files between workflows
+        key: circlepipe-{{ .Revision }}-<< parameters.pipeline-name >>
+        paths:
+          - environments/
     - run:
         name: Generate the new pipeline
         command: circlepipe create pipeline << parameters.pipeline-name >>

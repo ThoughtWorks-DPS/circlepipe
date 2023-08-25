@@ -81,6 +81,7 @@ var pipelineCmd = &cobra.Command{
 			}
 			//
 			lastJob = "requires:" + jobRequiresLine("pre", role)
+
 			// generate an optional approval step
 			requiredJobs = "requires:"
 			if viper.GetBool("PipeIsApprove") {

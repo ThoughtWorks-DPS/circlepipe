@@ -36,7 +36,7 @@ func generatePipelineEnvfiles(pipeline string) {
 	pipelineDef, exists := pipeControl[pipeline]
 	if !exists { exitOnError(fmt.Errorf("%s not found in %s", pipeline, pipeControlFile())) }
 
-	// start from envDefaultsFile, default file is required even id blank
+	// start from envDefaultsFile, default file is required even if blank
 	baseVars, err := envFileValues(envDefaultsFile())
 	exitOnError(err)
 

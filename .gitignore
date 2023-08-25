@@ -3,7 +3,6 @@ environments/
 test/test_config_init/.circlepipe.yaml
 test/test_envfiles_json/result/*.tfvars.json
 test/test_envfiles_yaml/result/*.tfvars.yaml
-test/test_pipeline_terraform/result/generated_config.yml
 test/test_pipeline_terraform/result/*.tfvars.json
 test/test_pipeline_all_instances/result/generated_config.yml
 test/test_pipeline_all_instances/result/*.tfvars.json

@@ -4,7 +4,7 @@ package cmd
 const (
 
 	// Default name of file containing the pipeline definition
-	DefaultPipeControlFileName	  = "generate.json"
+	DefaultPipeControlFileName	  = "generate.yaml"
 
 	// Default name of the generated pipeline config.yml
 	DefaultPipeOutFile  				  = "generated_config.yml"
