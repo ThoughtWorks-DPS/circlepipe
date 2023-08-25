@@ -260,7 +260,11 @@ Look at this set of files that make up a full set of files in a complete example
 
 Here is a screen shot of the circleci visualization of the pipeline.  
 
-(include image here)  
+<div align="center">
+	<p>
+		<img alt="Thoughtworks Logo" src="https://raw.githubusercontent.com/ThoughtWorks-DPS/circlepipe/main/doc/images/pipeline.png" width=800 />
+	</p>
+</div>  
 
 #### 5.5 Other pipeline workflow options
 

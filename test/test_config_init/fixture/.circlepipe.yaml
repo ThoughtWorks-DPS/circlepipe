@@ -6,7 +6,7 @@ envfilespath: environments
 envfileswriteext: .tfvars.json
 pipeapprovaljobname: approve %s changes
 pipeapprovaltemplate: default
-pipecontrolfilename: generate.json
+pipecontrolfilename: generate.yaml
 pipeisapprove: true
 pipeispost: true
 pipeispre: true

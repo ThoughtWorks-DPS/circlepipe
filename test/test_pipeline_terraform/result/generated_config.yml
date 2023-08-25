@@ -153,8 +153,6 @@ workflows:
                 env-credentials: nonprod
           filters: *on-tag-main
 
-
-
       - terraform/plan:
           name: plan preview-us-east-2 change
           context: *context
@@ -170,8 +168,6 @@ workflows:
                 instance-name: preview-us-east-2
                 env-credentials: nonprod
           filters: *on-tag-main
-
-
 
       - terraform/plan:
           name: plan preview-eu-west-1 change
@@ -189,8 +185,6 @@ workflows:
                 env-credentials: nonprod
           filters: *on-tag-main
 
-
-
       - terraform/plan:
           name: plan preview-eu-central-1 change
           context: *context
@@ -206,8 +200,6 @@ workflows:
                 instance-name: preview-eu-central-1
                 env-credentials: nonprod
           filters: *on-tag-main
-
-
 
 
       - approve preview changes:
@@ -234,8 +226,6 @@ workflows:
           requires:
             - approve preview changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply preview-us-east-2 change
           context: *context
@@ -251,8 +241,6 @@ workflows:
           requires:
             - approve preview changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply preview-eu-west-1 change
           context: *context
@@ -268,8 +256,6 @@ workflows:
           requires:
             - approve preview changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply preview-eu-central-1 change
           context: *context
@@ -285,8 +271,6 @@ workflows:
           requires:
             - approve preview changes
           filters: *on-tag-main
-
-
       - terraform/plan:
           name: plan nonprod-us-west-2 change
           context: *context
@@ -304,8 +288,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve preview changes
-
-
       - terraform/plan:
           name: plan nonprod-us-east-2 change
           context: *context
@@ -323,8 +305,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve preview changes
-
-
       - terraform/plan:
           name: plan nonprod-eu-west-1 change
           context: *context
@@ -342,8 +322,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve preview changes
-
-
       - terraform/plan:
           name: plan nonprod-eu-central-1 change
           context: *context
@@ -361,8 +339,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve preview changes
-
-
 
       - approve nonprod changes:
           type: approval
@@ -392,8 +368,6 @@ workflows:
           requires:
             - approve nonprod changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply nonprod-us-east-2 change
           context: *context
@@ -409,8 +383,6 @@ workflows:
           requires:
             - approve nonprod changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply nonprod-eu-west-1 change
           context: *context
@@ -426,8 +398,6 @@ workflows:
           requires:
             - approve nonprod changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply nonprod-eu-central-1 change
           context: *context
@@ -443,8 +413,6 @@ workflows:
           requires:
             - approve nonprod changes
           filters: *on-tag-main
-
-
       - terraform/plan:
           name: plan prod-us-west-2 change
           context: *context
@@ -462,8 +430,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve nonprod changes
-
-
       - terraform/plan:
           name: plan prod-us-east-2 change
           context: *context
@@ -481,8 +447,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve nonprod changes
-
-
       - terraform/plan:
           name: plan prod-eu-west-1 change
           context: *context
@@ -500,8 +464,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve nonprod changes
-
-
       - terraform/plan:
           name: plan prod-eu-central-1 change
           context: *context
@@ -519,8 +481,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve nonprod changes
-
-
 
       - approve prod changes:
           type: approval
@@ -550,8 +510,6 @@ workflows:
           requires:
             - approve prod changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply prod-us-east-2 change
           context: *context
@@ -567,8 +525,6 @@ workflows:
           requires:
             - approve prod changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply prod-eu-west-1 change
           context: *context
@@ -584,8 +540,6 @@ workflows:
           requires:
             - approve prod changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply prod-eu-central-1 change
           context: *context
@@ -601,8 +555,6 @@ workflows:
           requires:
             - approve prod changes
           filters: *on-tag-main
-
-
       - terraform/plan:
           name: plan mapi-us-west-2 change
           context: *context
@@ -620,8 +572,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve prod changes
-
-
       - terraform/plan:
           name: plan mapi-eu-west-1 change
           context: *context
@@ -639,8 +589,6 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve prod changes
-
-
 
       - approve mapi changes:
           type: approval
@@ -668,8 +616,6 @@ workflows:
           requires:
             - approve mapi changes
           filters: *on-tag-main
-
-
       - terraform/apply:
           name: apply mapi-eu-west-1 change
           context: *context

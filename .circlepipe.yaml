@@ -1,0 +1,23 @@
+circleciconfigfile: config.yml
+envdefaultsfilename: default
+envfilescreate: true
+envfilesext: .json
+envfilespath: environments
+envfileswriteext: .tfvars.json
+pipeapprovaljobname: approve %s changes
+pipeapprovaltemplate: default
+pipecontrolfilename: generate.yaml
+pipeisapprove: true
+pipeispost: true
+pipeispre: true
+pipeoutfile: generated_config.yml
+pipepath: .circleci
+pipepostjobname: apply %s change
+pipepostroleonly: false
+pipeposttemplate: post-approve.yml
+pipeprejobname: plan %s change
+pipepreroleonly: false
+pipepretemplate: pre-approve.yml
+pipepriorjobsrequired: true
+pipeworkflowheading: default
+pipeworkflowname: continuation-generated-workflow
