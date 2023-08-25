@@ -262,7 +262,7 @@ Here is a screen shot of the circleci visualization of the pipeline.
 
 <div align="center">
 	<p>
-		<img alt="Thoughtworks Logo" src="https://raw.githubusercontent.com/ThoughtWorks-DPS/circlepipe/main/doc/images/pipeline.png" width=800 />
+		<img alt="Thoughtworks Logo" src="https://raw.githubusercontent.com/ThoughtWorks-DPS/circlepipe/main/doc/images/example_pipeline.png" width=800 />
 	</p>
 </div>  
 
