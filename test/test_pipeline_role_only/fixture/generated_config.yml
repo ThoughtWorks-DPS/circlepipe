@@ -189,11 +189,3 @@ workflows:
           filters: *on-tag-main
           requires:
             - approve prod deployment
-
-
-
-      - approve mapi deployment:
-          type: approval
-          requires:
-            - deploy metrics-server update to mapi
-          filters: *on-tag-main

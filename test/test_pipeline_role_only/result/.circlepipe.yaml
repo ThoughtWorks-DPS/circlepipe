@@ -19,5 +19,6 @@ pipeprejobname: deploy metrics-server update to %s
 pipepreroleonly: true
 pipepretemplate: pre-approve.yml
 pipepriorjobsrequired: true
+pipeskipapproval: "mapi"
 pipeworkflowheading: default
 pipeworkflowname: continuation-generated-workflow
