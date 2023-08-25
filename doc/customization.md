@@ -40,50 +40,56 @@ Name of the workflow in the generated config.yml
 
 Should be a job from the pre-approve template for each role or instance in the control file.  
 
-#### 6.1.4 `--PipeIsApprove`
+#### 6.1.5 `--PipeIsApprove`
 
 **default** _true_
 
 Should be an Approval step after the pre- jobs for each role in the control file.  
 
-#### 6.1.4 `--PipeIsPost`
+#### 6.1.6 `--PipeIsPost`
 
 **default** _true_
 
 Should be a job from the post-approve template for each role or instance in the control file.  
 
-#### 6.1.3 `--PipePriorJobsRequired`
+#### 6.1.7 `--PipePriorJobsRequired`
 
 **default** _true_
 
 Jobs after approval steps should require an Approval. Where there will be an approval step, this should alwyas be true.
 
-#### 6.1.4 `--PipePreRoleOnly`
+#### 6.1.8 `--PipeSkipApproval`
+
+**default** _""_
+
+Skip the approval step for this role.
+
+#### 6.1.9 `--PipePreRoleOnly`
 
 **default** _false_
 
 The "pre" jobs created should be at the role-level only. Normally pre- jobs are created for each instance in a role. But for deployment pipelines that do not include any instance specific action you can set this flag to generate an instance of the pre-approve template once per role. See **other pipeline configuration examples** below.
 
-#### 6.1.4 `--PipePostRoleOnly`
+#### 6.1.10 `--PipePostRoleOnly`
 
 **default** _false_
 
 Similar to the previsou flag, there may be a situation in which a post-approve job is required but only at the role-level. Set this flag to get the result.  
 
-#### 6.1.4 `--PipePreTemplate`
+#### 6.1.11 `--PipePreTemplate`
 
 **default** _pre-approve.yml_  
 
 Name of the file containing the pre-approve.yml template.
 
 
-#### 6.1.4 `--PipePostTemplate`
+#### 6.1.12 `--PipePostTemplate`
 
 **default** _post-approve.yml_  
 
 Name of the file containing the post-approve.yml template.
 
-#### 6.1.4 `--PipePreJobName`
+#### 6.1.13 `--PipePreJobName`
 
 **default** _"plan %s change"_  
 
@@ -108,37 +114,37 @@ The configuration of the job name for each pre-approve job generated. As in this
 
 The name of the pre- job created for the preview-us-west-2 instance of the preview role will be configured based on this string value. Define a custom pre- job name pattern by passing this setting a custom string. The %s in the string will be substitued with the instnace or role name.  
 
-#### 6.1.4 `--PipePostJobName`
+#### 6.1.14 `--PipePostJobName`
 
 **default** _"apply %s change"_  
 
 The configuration of the job name for each post-approve job generated.
 
-#### 6.1.4 `--PipeApprovalJobName`
+#### 6.1.15 `--PipeApprovalJobName`
 
 **default** _"approve %s changes"_  
 
 The configuration of the job name for each Approval job generated
 
-#### 6.1.4 `--EnvFilesCreate`
+#### 6.1.16 `--EnvFilesCreate`
 
 **default** _true_  
 
 Should environment files be generated automatically with creating a pipeline.  
 
-#### 6.1.4 `--EnvFilesPath`
+#### 6.1.17 `--EnvFilesPath`
 
 **default** _environments_  
 
 "Path/to" folder containing env files.  
 
-#### 6.1.4 `--DefaultsFileName`
+#### 6.1.18 `--DefaultsFileName`
 
 **default** _default_  
 
 Name of the env file containg default settings. This is a required file.  
 
-#### 6.1.4 `--EnvFilesExt`
+#### 6.1.19 `--EnvFilesExt`
 
 **default** _.json_  
 
@@ -146,13 +152,11 @@ Extension to the default, pipeline, role, or instance environment files maintain
 
 Suported options are .json, .yaml, .yml  
 
-#### 6.1.4 `--EnvFilesWriteExt`
+#### 6.1.20 `--EnvFilesWriteExt`
 
 **default** _.tfvars.json_  
 
 Extension applied to the generated role and instance envfiles used when created the pipeline.  
-
-
 
 #### 6.2 Experimental options  
 
@@ -168,7 +172,7 @@ workflows:
   %s:
     jobs:
 ```
-###### 6.2.1 `--PipeApprovalTemplate`
+###### 6.2.2 `--PipeApprovalTemplate`
 
 **default**  
 ```yaml
@@ -179,19 +183,17 @@ workflows:
 ```
 Name of a file containing the Approval step template.  
 
-###### 6.2.1 `--PipePath`
+###### 6.2.3 `--PipePath`
 
 **default** _.circleci_  
 
 Path to the circleci pipeline file.
 
-###### 6.2.1 `--CircleciConfigFile`
+###### 6.2.4 `--CircleciConfigFile`
 
 **default** _config.yml_  
 
 Name of thecircleci pipeline config file.
-
-
 
 #### 6.3 Circlepipe configuration
 
@@ -203,7 +205,7 @@ By default this file is presumed to be `.circlepipe.yaml` however you can specif
 
 Use `config init` command to generate a .circlepipe.yaml file with all supported values.  
 
-###### 6.3.1 View the current configuration settings
+###### 6.3.2 View the current configuration settings
 
 Use the `config view` command to see all the current settings.  
 
@@ -236,16 +238,16 @@ Example output:
 }
 ```
 
-###### 6.3.2 Get a particular setting
+###### 6.3.3 Get a particular setting
 
 Use `config get NAME` to see the current setting of a specific configuration value.  
 
 
-###### 6.3.2 Set a configuration value
+###### 6.3.4 Set a configuration value
 
 Use `config set NAME VALUE` to update the contents of the .circlepipe.yaml configuration file with a customization you want automatically applied to every circlepipe .  
 
-###### 6.3.3 Use ENV variables
+###### 6.3.5 Use ENV variables
 
 Each of the above --flag customizations can also be set using ENV variables. Use the following format to create an ENV variable to any flag:  
 
@@ -362,10 +364,122 @@ workflows:
           instance-name: prod-eu-central-1
           env-credentials: prod
 
+      - integration-tests:
+          name: mapi-us-west-2 integration test
+          context: *context
+          instance-name: mapi-us-west-2
+          env-credentials: nonprod
+
+      - integration-tests:
+          name: mapi-eu-west-1 integration test
+          context: *context
+          instance-name: mapi-eu-west-1
+          env-credentials: nonprod
+
 ```
 
-###### 6.4.1 Run jobs at the role-level only  
+###### 6.4.2 Run a single job at the role-level only  
 
+Here is an example of a pipeline that does a single job followed by and approval. This would be the desired workflow for a pipeline rolling out a deployment of a new service. For example, using the pipeline control file from the FULL examples:
+
+Define a pre-approve.yml as follows:  
+```yaml
+      - deploy-app-version:
+          name: deploy metrics-server update to {{.role}}
+          role: {{.role}}
+          context: *context
+          env-credentials: {{.env_credentials}}
+          after-deploy-steps:
+            - test-app
+          filters: {{.filter}}
+          {{.priorapprovalrequired}}
+
+```
+
+Generate the pipeline by running the `create pipeline PIPELINENAME` command with the following flag settings
+```
+--PipePreRoleOnly=true                                     # only generate jobs for the pre-approve step
+--PipeApprovalJobname="approve %s deployment" \            # set the pre- job name to better description
+--PipeIsPost=false \                                       # no post- jobs are required
+--PipeSkipApproval: "mapi" \                               # skip adding an approval step after the last pre- job
+--PipePreJobName="deploy metrics-server update to %s" \    # rename the Pre- job name to a more accurate description
+--PipeWorkflowName="deploy-metrics-server"                 # use a more description workflow name
+```
+This will result in the following workflow:  
+```yaml
+
+workflows:
+  version: 2
+
+  continuation-generated-workflow:
+    jobs:
+      - deploy-app-version:
+          name: deploy metrics-server update to preview
+          role: preview
+          context: *context
+          env-credentials: op.nonprod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+
+
+
+      - approve preview deployment:
+          type: approval
+          requires:
+            - deploy metrics-server update to preview
+          filters: *on-tag-main
+
+      - deploy-app-version:
+          name: deploy metrics-server update to nonprod
+          role: nonprod
+          context: *context
+          env-credentials: op.nonprod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+          requires:
+            - approve preview deployment
+
+
+
+      - approve nonprod deployment:
+          type: approval
+          requires:
+            - deploy metrics-server update to nonprod
+          filters: *on-tag-main
+
+      - deploy-app-version:
+          name: deploy metrics-server update to prod
+          role: prod
+          context: *context
+          env-credentials: op.prod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+          requires:
+            - approve nonprod deployment
+
+
+
+      - approve prod deployment:
+          type: approval
+          requires:
+            - deploy metrics-server update to prod
+          filters: *on-tag-main
+
+      - deploy-app-version:
+          name: deploy metrics-server update to mapi
+          role: mapi
+          context: *context
+          env-credentials: op.prod.env
+          after-deploy-steps:
+            - test-app
+          filters: *on-tag-main
+          requires:
+            - approve prod deployment
+
+```
 
 <hr>  
 

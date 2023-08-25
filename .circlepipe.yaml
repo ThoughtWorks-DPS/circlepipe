@@ -19,5 +19,6 @@ pipeprejobname: plan %s change
 pipepreroleonly: false
 pipepretemplate: pre-approve.yml
 pipepriorjobsrequired: true
+pipeskipapproval: ""
 pipeworkflowheading: default
 pipeworkflowname: continuation-generated-workflow
