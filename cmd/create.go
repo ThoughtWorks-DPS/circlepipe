@@ -15,6 +15,8 @@ var EnvFilesWriteExt string
 var PipeOutFile string
 var PipeWorkflowName string
 var PipeIsApprove bool
+var PipeApproveAfterPre bool
+var PipeApproveAfterPost bool
 var PipePriorJobsRequired bool
 var PipeSkipApproval string
 var PipeIsPre bool
@@ -83,6 +85,16 @@ func init() {
   createCmd.PersistentFlags().BoolVar(&PipeIsApprove, "PipeIsApprove", DefaultPipeIsApprove, "Include approval step?")
   if !createCmd.PersistentFlags().Lookup("PipeIsApprove").Changed {
     exitOnError(viper.BindPFlag("PipeIsApprove", createCmd.PersistentFlags().Lookup("PipeIsApprove")))
+  }
+
+  createCmd.PersistentFlags().BoolVar(&PipeApproveAfterPre, "PipeApproveAfterPre", DefaultPipeApproveAfterPre, "Include approval step after Pre?")
+  if !createCmd.PersistentFlags().Lookup("PipeApproveAfterPre").Changed {
+    exitOnError(viper.BindPFlag("PipeApproveAfterPre", createCmd.PersistentFlags().Lookup("PipeApproveAfterPre")))
+  }
+
+  createCmd.PersistentFlags().BoolVar(&PipeApproveAfterPost, "PipeApproveAfterPost", DefaultPipeApproveAfterPost, "Include approval step after Post?")
+  if !createCmd.PersistentFlags().Lookup("PipeApproveAfterPost").Changed {
+    exitOnError(viper.BindPFlag("PipeApproveAfterPost", createCmd.PersistentFlags().Lookup("PipeApproveAfterPost")))
   }
 
   createCmd.PersistentFlags().BoolVar(&PipePriorJobsRequired, "PipePriorJobsRequired", DefaultPipePriorJobsRequired, "Should post jobs require the approval?")

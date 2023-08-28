@@ -12,7 +12,9 @@ const (
 	// default name for the generated workflow
 	DefaultPipeWorkflowName       = "continuation-generated-workflow"
 
-	// Include an approval step between pro and post jobs
+	// Include an approval step between pro and post jobs or after, or none
+	DefaultPipeApproveAfterPre		= true
+	DefaultPipeApproveAfterPost   = false
 	DefaultPipeIsApprove				  = true
 	// Should jobs require the prior approval step, usually set to match PipeIsApprove
 	DefaultPipePriorJobsRequired  = true
