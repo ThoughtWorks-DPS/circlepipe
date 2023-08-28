@@ -44,52 +44,64 @@ Should be a job from the pre-approve template for each role or instance in the c
 
 **default** _true_
 
+Should be Approval steps.  
+
+#### 6.1.6 `--PipeApproveAfterPre`
+
+**default** _true_
+
 Should be an Approval step after the pre- jobs for each role in the control file.  
 
-#### 6.1.6 `--PipeIsPost`
+#### 6.1.7 `--PipeApproveAfterPost`
+
+**default** _true_
+
+Should be an Approval step after the post- jobs for each role in the control file.  
+
+#### 6.1.8 `--PipeIsPost`
 
 **default** _true_
 
 Should be a job from the post-approve template for each role or instance in the control file.  
 
-#### 6.1.7 `--PipePriorJobsRequired`
+#### 6.1.9 `--PipePriorJobsRequired`
 
 **default** _true_
 
 Jobs after approval steps should require an Approval. Where there will be an approval step, this should alwyas be true.
 
-#### 6.1.8 `--PipeSkipApproval`
+#### 6.1.10 `--PipeSkipApproval`
 
 **default** _""_
 
 Skip the approval step for this role.
 
-#### 6.1.9 `--PipePreRoleOnly`
+#### 6.1.11 `--PipePreRoleOnly`
 
 **default** _false_
 
 The "pre" jobs created should be at the role-level only. Normally pre- jobs are created for each instance in a role. But for deployment pipelines that do not include any instance specific action you can set this flag to generate an instance of the pre-approve template once per role. See **other pipeline configuration examples** below.
 
-#### 6.1.10 `--PipePostRoleOnly`
+#### 6.1.12 `--PipePostRoleOnly`
 
 **default** _false_
 
 Similar to the previsou flag, there may be a situation in which a post-approve job is required but only at the role-level. Set this flag to get the result.  
 
-#### 6.1.11 `--PipePreTemplate`
+#### 6.1.13 `--PipePreTemplate`
 
 **default** _pre-approve.yml_  
 
 Name of the file containing the pre-approve.yml template.
 
 
-#### 6.1.12 `--PipePostTemplate`
+#### 6.1.14 `--PipePostTemplate`
 
 **default** _post-approve.yml_  
 
 Name of the file containing the post-approve.yml template.
 
-#### 6.1.13 `--PipePreJobName`
+#### 6.1.15 `--PipePreJobName`
 
 **default** _"plan %s change"_  
 
@@ -114,37 +126,37 @@ The configuration of the job name for each pre-approve job generated. As in this
 
 The name of the pre- job created for the preview-us-west-2 instance of the preview role will be configured based on this string value. Define a custom pre- job name pattern by passing this setting a custom string. The %s in the string will be substitued with the instnace or role name.  
 
-#### 6.1.14 `--PipePostJobName`
+#### 6.1.16 `--PipePostJobName`
 
 **default** _"apply %s change"_  
 
 The configuration of the job name for each post-approve job generated.
 
-#### 6.1.15 `--PipeApprovalJobName`
+#### 6.1.17 `--PipeApprovalJobName`
 
 **default** _"approve %s changes"_  
 
 The configuration of the job name for each Approval job generated
 
-#### 6.1.16 `--EnvFilesCreate`
+#### 6.1.18 `--EnvFilesCreate`
 
 **default** _true_  
 
 Should environment files be generated automatically with creating a pipeline.  
 
-#### 6.1.17 `--EnvFilesPath`
+#### 6.1.19 `--EnvFilesPath`
 
 **default** _environments_  
 
 "Path/to" folder containing env files.  
 
-#### 6.1.18 `--DefaultsFileName`
+#### 6.1.20 `--DefaultsFileName`
 
 **default** _default_  
 
 Name of the env file containg default settings. This is a required file.  
 
-#### 6.1.19 `--EnvFilesExt`
+#### 6.1.21 `--EnvFilesExt`
 
 **default** _.json_  
 
@@ -152,7 +164,7 @@ Extension to the default, pipeline, role, or instance environment files maintain
 
 Suported options are .json, .yaml, .yml  
 
-#### 6.1.20 `--EnvFilesWriteExt`
+#### 6.1.22 `--EnvFilesWriteExt`
 
 **default** _.tfvars.json_  
 
@@ -256,6 +268,8 @@ Each of the above --flag customizations can also be set using ENV variables. Use
 Substitute the desired flag name in the format.  
 
 #### 6.4 Other Pipeline formatting examples
+
+Keep in mind that there are probably other combination of settings that can get to a similar output. And there are certainly combinations of settings that will result in useless or broken workflows. The following examples are ones that fit certain specific use cases and for which automated testing of the tool happens at build time.  
 
 ###### 6.4.1 Run a job for all instances at once, in parallel
 
@@ -380,7 +394,7 @@ workflows:
 
 ###### 6.4.2 Run a single job at the role-level only  
 
-Here is an example of a pipeline that does a single job followed by and approval. This would be the desired workflow for a pipeline rolling out a deployment of a new service. For example, using the pipeline control file from the FULL examples:
+Here is an example of a pipeline that does a single job followed by and approval. This would be the desired workflow for a pipeline rolling out a deployment of a new service where you could test in the same job or at the same level. For example, using the pipeline control file from the FULL examples:
 
 Define a pre-approve.yml as follows:  
 ```yaml
@@ -480,6 +494,55 @@ workflows:
             - approve prod deployment
 
 ```
+
+###### 6.4.3 Include Pre and Post jobs, Approval step after the Post job
+
+This is an example of using the combination of role-only for the pre- jobs and instances for the post- job follwed by an approval. The typical use case being in multi-cluster deployments where a single job is all that is needed to trigger the deployments, however testing must be done per instance.  
+
+Pre: deploy-metrics-server.yml
+```yaml
+      - flux-aoa/deploy-overlay-template:
+          name: deploy metrics-server update to {{.role}}
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-metrics-server
+          app-name: metrics-server
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          context: *context
+          env-credentials: {{.teller_filename}}
+          filters: {{.filter}}
+          {{.priorapprovalrequired}}
+
+
+```
+Post: test-metrics-server.yml
+```yaml
+      - test-metrics-server:
+          name: test metrics-server on {{.instance}}
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-metrics-server
+          app-name: metrics-server
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          filters: {{.filter}}
+          {{.lastjob}}
+
+
+```
+
+Generate the pipeline by running the `create pipeline PIPELINENAME` command with the following flag settings
+```
+--PipeApproveAfterPost=true                               # approval step comes after post- jobs
+--PipeApproveAfterPre=false                               # no approval step after pre- jobs
+--PipPostJobName="test metrics-server on %s"              # more descriptive name for post- job
+--PipeApprovalJobname="approve %s deployment" \           # set the approval job name to better description
+--PipePreRoleOnly=true                                    # generate pre-jobs at the role level only
+--PipePreJobName="deploy metrics-server update to %s" \   # rename the Pre- job name to a more accurate description
+--PipeWorkflowName="deploy-metrics-server"                # use a more description workflow name
+```
+
+
 
 <hr>  
 
