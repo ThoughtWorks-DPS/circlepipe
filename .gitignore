@@ -10,6 +10,7 @@ test/test_pipeline_role_only_no_approval/result/generated_config.yml
 test/test_pipeline_role_only_no_approval/result/*.tfvars.json
 test/test_pipeline_role_only/result/generated_config.yml
 test/test_pipeline_role_only/result/*.tfvars.json
+test/test_pipeline_role_and_instance_post_approve/result/*.pipe.*
 
 .python-version
 cosign.*
