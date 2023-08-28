@@ -82,9 +82,9 @@ var pipelineCmd = &cobra.Command{
 			//
 			lastJob = "requires:" + jobRequiresLine("pre", role)
 
-			// generate an optional approval step
+			// generate an optional approval step after pre- jobs
 			requiredJobs = "requires:"
-			if viper.GetBool("PipeIsApprove") {
+			if viper.GetBool("PipeIsApprove") && viper.GetBool("PipeApproveAfterPre") {
 				fmt.Printf("      [approve] %s\n", role)
 				requiredJobs += jobRequiresLine("approve", role)
 				approvalVars := asssembleVars(filter, role, "", jobNameTemplate("approve", role), lastJob, requiredJobs, "", jobsToBeApproved, make(map[string]interface{}))
@@ -112,6 +112,16 @@ var pipelineCmd = &cobra.Command{
 						instanceVars := asssembleVars(filter, role, instance, jobNameTemplate("post", role), lastJob, requiredJobs, jobNameTemplate("approve", role), "", anyEnvFileValues(instance))
 						exitOnError(post.Execute(outfile, instanceVars))
 					}
+				}
+			}
+
+			// generate an optional approval step after post- jobs
+			if viper.GetBool("PipeIsApprove") && viper.GetBool("PipeApproveAfterPost") {
+				fmt.Printf("      [approve] %s\n", role)
+				requiredJobs += jobRequiresLine("approve", role)
+				approvalVars := asssembleVars(filter, role, "", jobNameTemplate("approve", role), lastJob, requiredJobs, "", jobsToBeApproved, make(map[string]interface{}))
+				if role != viper.GetString("PipeSkipApproval") {
+					exitOnError(approve.Execute(outfile, approvalVars))
 				}
 			}
 		}

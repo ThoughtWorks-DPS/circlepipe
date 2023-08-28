@@ -16,6 +16,7 @@ func TestPipelineCmd(t *testing.T) {
 		{ "all_instances"},
 		{ "role_only_no_approval"},
 		{ "role_only" },
+		{"role_and_instance_post_approve"},
 	}
 	var setEnvFilesPath string
 	var setPipePath string
