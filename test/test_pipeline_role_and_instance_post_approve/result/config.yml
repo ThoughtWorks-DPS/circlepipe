@@ -1,0 +1,253 @@
+---
+version: 2.1
+
+setup: true
+
+orbs:
+  do: twdps/pipeline-events@2.0.0
+  slack: circleci/slack@4.12.5
+  continuation: circleci/continuation@0.4.0
+  flux-aoa:
+    executor:
+      parameters:
+        executor-image:
+          description: available override
+          type: string
+          default: twdps/circleci-infra-aws:alpine-stable
+
+        resource-class:
+          type: enum
+          enum: [small, medium, medium+, large, xlarge, 2xlarge, 2xlarge+]
+          default: medium
+
+        username:
+          description: username for executor registry authentication
+          type: env_var_name
+          default: DOCKER_LOGIN
+
+        password:
+          description: password for executor registry authentication
+          type: env_var_name
+          default: DOCKER_PASSWORD
+
+      resource_class: << parameters.resource-class >>
+
+      docker:
+        - image: << parameters.executor-image >>
+          auth:
+            username: ${<< parameters.username >>}
+            password: ${<< parameters.password >>}
+    commands:
+      push-overlay-file:
+        parameters:
+          org-name:
+            description: github organization name
+            type: string
+          repo-name:
+            description: github repository name
+            type: string
+          app-name:
+            description: application name
+            type: string
+          pipeline-name:
+            description: current pipeline
+            type: string
+          role:
+            description: push values changes to this role
+            type: string
+        steps:
+          - run:
+              name: test of push-overlay-file
+              command: |
+                echo "updating << parameters.org-name >>/<< parameters.pipeline-name>>/<< parameters.role >>/<< parameters.role >>-<< parameters.app-name >>"
+    jobs:
+      deploy-overlay-template:
+        parameters:
+          org-name:
+            description: github organization name
+            type: string
+          repo-name:
+            description: github repository name
+            type: string
+          app-name:
+            description: aoolication name
+            type: string
+          pipeline-name:
+            description: current pipeline
+            type: string
+          role:
+            description: push values changes to this role
+            type: string
+          env-credentials:
+            description: a string
+            type: string
+          before-deploy:
+            description: run custom steps before pushing overlay file to app-of-apps repo
+            type: steps
+            default: [ ]
+          after-deploy:
+            description: run custom steps after pushing overlay file to app-of-apps repo
+            type: steps
+            default: [ ]
+        docker:
+          - image: twdps/circleci-infra-aws:alpine-stable
+        steps:
+          - checkout
+          - setup_remote_docker
+          - when:
+              name: before-deploy steps
+              condition: << parameters.before-deploy >>
+              steps: << parameters.before-deploy >>
+          - run:
+              name: template the overlay
+              command: echo "template"
+          - push-overlay-file:
+              org-name: << parameters.org-name >>
+              repo-name: << parameters.repo-name >>
+              app-name: << parameters.app-name >>
+              pipeline-name: << parameters.pipeline-name >>
+              role: << parameters.role >>
+          - run: flux events --for HelmRepository/<< parameters.app-name >>
+          - when:
+              name: after-deploy steps
+              condition: << parameters.after-deploy >>
+              steps: << parameters.after-deploy >>
+
+
+globals:
+  - &context delivery-infrastructure-global
+  - &executor-image twdps/circleci-infra-aws:alpine-stable
+
+parameters:
+
+  continuation-params:
+    description: parameters to be passed to continuation orb
+    type: string
+    default: ""
+  shell-options:
+    description: Default shell options
+    type: string
+    default: /bin/bash -eo pipefail
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+on-tag-main: &on-tag-main
+  branches:
+    ignore: /.*/
+  tags:
+    only: /^[0-9]+\.[0-9]+\.[0-9]+$/
+
+commands:
+
+  set-environment:
+    description: sets environment credentials and configuration from templates
+    parameters:
+      teller_filename:
+        description: teller filename
+        type: string
+      pipeline-name:
+        description: name of pipeline
+        type: string
+    steps:
+      - run: echo "setup"
+      - restore_cache:
+          name: restore circlecigen generated tfvars
+          key: circlepipe-{{ .Revision }}-<< parameters.pipeline-name >>
+
+
+
+jobs:
+
+  test-metrics-server:
+    parameters:
+      org-name:
+        description: github organization name
+        type: string
+      repo-name:
+        description: github repository name
+        type: string
+      app-name:
+        description: aoolication name
+        type: string
+      pipeline-name:
+        description: current pipeline
+        type: string
+      role:
+        description: push values changes to this role
+        type: string
+      before-deploy:
+        description: run custom steps before pushing overlay file to app-of-apps repo
+        type: steps
+        default: [ ]
+      after-deploy:
+        description: run custom steps after pushing overlay file to app-of-apps repo
+        type: steps
+        default: [ ]
+    docker:
+      - image: twdps/circleci-infra-aws:alpine-stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: echo "testing"
+
+  launch-dynamic-pipeline:
+    parameters:
+      pipeline-name:
+        description: Name of the pipeline to be generated
+        type: string
+      workflow-name:
+        description: Custom name for the resulting workflow within the generated_config.yml
+        type: string
+      template-file:
+        description: Custom CircleCI template file to use for pipeline generation
+        type: string
+        default: "."
+      multi-config:
+        description: Name of the multi-environment definition/configuration file to use
+        type: string
+        default: multi.json
+      teller-filename:
+        description: teller filename
+        type: string
+    docker:
+      - image: *executor-image
+        auth:
+          username: $DOCKER_LOGIN
+          password: $DOCKER_PASSWORD
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: generate continuation pipeline
+          command: |
+            circlepipe version
+            echo "--PipIsApprove=false --PipeControlFileName=muilti.json --PipeIsPost=false --PipePreJobName=deploy metrics-server update to %s"
+            "--PipePreRoleOnly=true --PipePreTemplate=update-metrics-server.yml --PipePriorJobsRequired --PipeWorkflowName=deploy-metrics-server"
+
+      - save_cache:
+          name: persist generated envfiles between workflows
+          key: circlepipe-{{ .Revision }}-<< parameters.pipeline-name >>
+          paths:
+            - environments/
+      - continuation/continue:
+          parameters: |
+            { "continuation-params": "<< parameters.pipeline-name >>" }
+          configuration_path: .circleci/generated_config.yml
+
+workflows:
+  version: 2
+
+  sandbox test:
+    jobs:
+      - launch-dynamic-pipeline:
+         name: generate sandbox pipeline
+         context: *context
+         pipeline-name: sandbox
+         workflow-name: sandbox-deployment
+         multi-config: multi.json
+         teller-filename: .teller-sandbox.yml
+         filters: *on-push-main

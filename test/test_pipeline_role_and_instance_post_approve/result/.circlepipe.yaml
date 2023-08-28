@@ -3,24 +3,24 @@ envdefaultsfilename: default
 envfilescreate: true
 envfilesext: .json
 envfilespath: environments
-envfileswriteext: .tfvars.json
+envfileswriteext: .pipe.json
 pipeapprovaljobname: approve %s deployment
 pipeapprovaltemplate: default
-pipeapproveafterpost: false
-pipeapproveafterpre: true
-pipecontrolfilename: generate.yaml
+pipeapproveafterpost: true
+pipeapproveafterpre: false
+pipecontrolfilename: multi.json
 pipeisapprove: true
-pipeispost: false
+pipeispost: true
 pipeispre: true
 pipeoutfile: generated_config.yml
 pipepath: .circleci
-pipepostjobname: apply %s change
+pipepostjobname: test metrics-server on %s
 pipepostroleonly: false
-pipeposttemplate: post-approve.yml
+pipeposttemplate: test-metrics-server.yml
 pipeprejobname: deploy metrics-server update to %s
 pipepreroleonly: true
-pipepretemplate: pre-approve.yml
+pipepretemplate: deploy-metrics-server.yml
 pipepriorjobsrequired: true
 pipeskipapproval: "mapi"
 pipeworkflowheading: default
-pipeworkflowname: continuation-generated-workflow
+pipeworkflowname: deploy-metrics-server

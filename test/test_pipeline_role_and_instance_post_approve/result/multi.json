@@ -1,0 +1,160 @@
+{
+  "sandbox": {
+      "filter": "*on-push-main",
+      "deploy": [
+          "sbxdev",
+          "sbxqa",
+          "sbxmapi"
+      ],
+      "roles": {
+          "sbxdev": {
+              "deploy": [
+                  "sbxdev-mkt01-aws-eu-west-3",
+                  "sbxdev-mkt01-aws-us-east-2"
+              ],
+              "instances": {
+                  "sbxdev-mkt01-aws-eu-west-3": {
+                      "aws_region": "eu-west-3",
+                      "aws_account_id": "101000000000"
+                  },
+                  "sbxdev-mkt01-aws-us-east-2": {
+                      "aws_region": "us-east-2",
+                      "aws_account_id": "101000000000"
+                  }
+              }
+          },
+          "sbxqa": {
+              "deploy": [
+                  "sbxqa-mkt01-aws-eu-west-3",
+                  "sbxqa-mkt01-aws-us-east-2"
+              ],
+              "instances": {
+                  "sbxqa-mkt01-aws-eu-west-3": {
+                      "aws_region": "eu-west-3",
+                      "aws_account_id": "101000000000"
+                  },
+                  "sbxqa-mkt01-aws-us-east-2": {
+                      "aws_region": "us-east-2",
+                      "aws_account_id": "101000000000"
+                  }
+              }
+          },
+          "sbxmapi": {
+              "deploy": [
+                  "sbxmapi-mkt01-aws-us-east-2"
+              ],
+              "instances": {
+                  "sbxmapi-mkt01-aws-us-east-2": {
+                      "aws_region": "us-east-2",
+                      "aws_account_id": "101000000000"
+                  }
+              }
+          }
+      }
+  },
+  "release": {
+      "filter": "*on-tag-main",
+      "deploy": [
+          "preview",
+          "nonprod",
+          "prod",
+          "mapi"
+      ],
+      "roles": {
+          "preview": {
+              "deploy": [
+                  "preview-mkt01-aws-eu-central-1",
+                  "preview-mkt01-aws-eu-west-1",
+                  "preview-mkt01-aws-us-east-1",
+                  "preview-mkt01-aws-us-west-2"
+              ],
+              "instances": {
+                  "preview-mkt01-aws-eu-central-1": {
+                      "aws_region": "eu-central-1",
+                      "aws_account_id": "102000000000"
+                  },
+                  "preview-mkt01-aws-eu-west-1": {
+                      "aws_region": "eu-west-1",
+                      "aws_account_id": "102000000000"
+                  },
+                  "preview-mkt01-aws-us-east-1": {
+                      "aws_region": "us-east-1",
+                      "aws_account_id": "102000000000"
+                  },
+                  "preview-mkt01-aws-us-west-2": {
+                      "aws_region": "us-west-2",
+                      "aws_account_id": "102000000000"
+                  }
+              }
+          },
+          "nonprod": {
+              "deploy": [
+                  "nonprod-mkt01-aws-eu-central-1",
+                  "nonprod-mkt01-aws-eu-west-1",
+                  "nonprod-mkt01-aws-us-east-1",
+                  "nonprod-mkt01-aws-us-west-2"
+              ],
+              "instances": {
+                  "nonprod-mkt01-aws-eu-central-1": {
+                      "aws_region": "eu-central-1",
+                      "aws_account_id": "102000000000"
+                  },
+                  "nonprod-mkt01-aws-eu-west-1": {
+                      "aws_region": "eu-west-1",
+                      "aws_account_id": "102000000000"
+                  },
+                  "nonprod-mkt01-aws-us-east-1": {
+                      "aws_region": "us-east-1",
+                      "aws_account_id": "102000000000"
+                  },
+                  "nonprod-mkt01-aws-us-west-2": {
+                      "aws_region": "us-west-2",
+                      "aws_account_id": "102000000000"
+                  }
+              }
+          },
+          "prod": {
+              "deploy": [
+                  "prod-mkt01-aws-eu-central-1",
+                  "prod-mkt01-aws-eu-west-1",
+                  "prod-mkt01-aws-us-east-1",
+                  "prod-mkt01-aws-us-west-2"
+              ],
+              "instances": {
+                  "prod-mkt01-aws-eu-central-1": {
+                      "aws_region": "eu-central-1",
+                      "aws_account_id": "103000000000"
+                  },
+                  "prod-mkt01-aws-eu-west-1": {
+                      "aws_region": "eu-west-1",
+                      "aws_account_id": "103000000000"
+                  },
+                  "prod-mkt01-aws-us-east-1": {
+                      "aws_region": "us-east-1",
+                      "aws_account_id": "103000000000"
+                  },
+                  "prod-mkt01-aws-us-west-2": {
+                      "aws_region": "us-west-2",
+                      "aws_account_id": "103000000000"
+                  }
+              }
+          },
+          "mapi": {
+              "deploy": [
+                  "mapi-mkt01-aws-eu-central-1",
+                  "mapi-mkt01-aws-us-east-1"
+              ],
+              "instances": {
+                  "mapi-mkt01-aws-eu-central-1": {
+                      "aws_region": "eu-central-1",
+                      "aws_account_id": "103000000000"
+                  },
+                  "mapi-mkt01-aws-us-east-1": {
+                      "aws_region": "us-east-1",
+                      "aws_account_id": "103000000000"
+                  }
+              }
+          }
+      }
+  }
+}

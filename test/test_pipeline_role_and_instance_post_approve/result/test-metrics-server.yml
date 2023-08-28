@@ -1,0 +1,10 @@
+      - test-metrics-server:
+          name: test metrics-server on {{.instance}}
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-metrics-server
+          app-name: metrics-server
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          filters: {{.filter}}
+          {{.lastjob}}

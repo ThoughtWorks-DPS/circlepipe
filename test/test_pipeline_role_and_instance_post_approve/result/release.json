@@ -1,0 +1,4 @@
+{
+  "pipeline_name": "release",
+  "teller_filename": ".teller-release.yml"
+}

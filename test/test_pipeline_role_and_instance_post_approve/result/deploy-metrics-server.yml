@@ -1,0 +1,11 @@
+      - flux-aoa/deploy-overlay-template:
+          name: deploy metrics-server update to {{.role}}
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-metrics-server
+          app-name: metrics-server
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          context: *context
+          env-credentials: {{.teller_filename}}
+          filters: {{.filter}}
+          {{.priorapprovalrequired}}
