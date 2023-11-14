@@ -3,20 +3,21 @@ package cmd
 import (
 	"fmt"
 	"os/exec"
-	"testing"
 	"path/filepath"
 	"strings"
+	"testing"
 )
 
 func TestPipelineCmd(t *testing.T) {
 	tests := []struct {
 		testtype string
 	}{
-		{ "terraform"},
-		{ "all_instances"},
-		{ "role_only_no_approval"},
-		{ "role_only" },
+		{"terraform"},
+		{"all_instances"},
+		{"role_only_no_approval"},
+		{"role_only"},
 		{"role_and_instance_post_approve"},
+		{"instance_and_role_post_approve"},
 	}
 	var setEnvFilesPath string
 	var setPipePath string
