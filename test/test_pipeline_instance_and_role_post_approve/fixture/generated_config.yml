@@ -1,0 +1,563 @@
+---
+version: 2.1
+
+
+orbs:
+  do: twdps/pipeline-events@2.0.0
+  slack: circleci/slack@4.12.5
+  continuation: circleci/continuation@0.4.0
+
+globals:
+  - &context delivery-infrastructure-global
+  - &executor-image twdps/circleci-infra-aws:alpine-stable
+
+parameters:
+
+  continuation-params:
+    description: parameters to be passed to continuation orb
+    type: string
+    default: ""
+  shell-options:
+    description: Default shell options
+    type: string
+    default: /bin/bash -eo pipefail
+
+on-push-main: &on-push-main
+  branches:
+    only: /main/
+  tags:
+    ignore: /.*/
+
+on-tag-main: &on-tag-main
+  branches:
+    ignore: /.*/
+  tags:
+    only: /^[0-9]+\.[0-9]+\.[0-9]+$/
+
+commands:
+
+  set-environment:
+    description: sets environment credentials and configuration from templates
+    parameters:
+      teller_filename:
+        description: teller filename
+        type: string
+      pipeline-name:
+        description: name of pipeline
+        type: string
+    steps:
+      - run: echo "setup"
+      - restore_cache:
+          name: restore circlecigen generated tfvars
+          key: circlepipe-{{ .Revision }}-<< parameters.pipeline-name >>
+
+jobs:
+  deploy-application:
+    parameters:
+      org-name:
+        description: github organization name
+        type: string
+      repo-name:
+        description: github repository name
+        type: string
+      app-name:
+        description: application name
+        type: string
+      pipeline-name:
+        description: current pipeline
+        type: string
+      role:
+        description: push values changes to this role
+        type: string
+      before-deploy:
+        description: run custom steps before pushing overlay file to app-of-apps repo
+        type: steps
+        default: [ ]
+      after-deploy:
+        description: run custom steps after pushing overlay file to app-of-apps repo
+        type: steps
+        default: [ ]
+    docker:
+      - image: twdps/circleci-infra-aws:alpine-stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: echo "deploying application"
+
+  test-application:
+    parameters:
+      org-name:
+        description: github organization name
+        type: string
+      repo-name:
+        description: github repository name
+        type: string
+      app-name:
+        description: aoolication name
+        type: string
+      pipeline-name:
+        description: current pipeline
+        type: string
+      role:
+        description: push values changes to this role
+        type: string
+      before-deploy:
+        description: run custom steps before pushing overlay file to app-of-apps repo
+        type: steps
+        default: [ ]
+      after-deploy:
+        description: run custom steps after pushing overlay file to app-of-apps repo
+        type: steps
+        default: [ ]
+    docker:
+      - image: twdps/circleci-infra-aws:alpine-stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: echo "testing"
+
+  deploy-monitors:
+      parameters:
+        role:
+          description: push values changes to this role
+          type: string
+        before-deploy:
+          description: run custom steps before pushing overlay file to app-of-apps repo
+          type: steps
+          default: [ ]
+        after-deploy:
+          description: run custom steps after pushing overlay file to app-of-apps repo
+          type: steps
+          default: [ ]
+      docker:
+        - image: twdps/circleci-infra-aws:alpine-stable
+      steps:
+        - checkout
+        - setup_remote_docker
+        - run: echo "deploying monitors"
+
+  launch-dynamic-pipeline:
+    parameters:
+      pipeline-name:
+        description: Name of the pipeline to be generated
+        type: string
+      template-file:
+        description: Custom CircleCI template file to use for pipeline generation
+        type: string
+        default: "."
+      multi-config:
+        description: Name of the multi-environment definition/configuration file to use
+        type: string
+        default: multi.json
+      skip-final-postapp-for:
+        description: Don't need the final post-test approval
+        type: string
+        default: ""
+    docker:
+      - image: *executor-image
+        auth:
+          username: $DOCKER_LOGIN
+          password: $DOCKER_PASSWORD
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: generate continuation pipeline
+          command: |
+            circlepipe version
+            # actual command would be here
+            # circlepipe create pipeline release --PipeOutFile generated_config.yml --PipeSkipApproval== --PipePath=<< parameters.skip-final-postapp-for >>
+
+      - save_cache:
+          name: persist generated envfiles between workflows
+          key: circlepipe-{{ .Revision }}-<< parameters.pipeline-name >>
+          paths:
+            - environments/
+      - continuation/continue:
+          parameters: |
+            { "continuation-params": "<< parameters.pipeline-name >>" }
+          configuration_path: .circleci/generated_config.yml
+
+
+workflows:
+  version: 2
+
+  deploy-test-application:
+    jobs:
+      - deploy-application:
+          name: deploy test-application on preview-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          
+      - test-application:
+          name: test test-application on preview-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on preview-mkt01-aws-eu-central-1
+
+      - deploy-application:
+          name: deploy test-application on preview-mkt01-aws-eu-west-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          
+      - test-application:
+          name: test test-application on preview-mkt01-aws-eu-west-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on preview-mkt01-aws-eu-west-1
+
+      - deploy-application:
+          name: deploy test-application on preview-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          
+      - test-application:
+          name: test test-application on preview-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on preview-mkt01-aws-us-east-1
+
+      - deploy-application:
+          name: deploy test-application on preview-mkt01-aws-us-west-2
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          
+      - test-application:
+          name: test test-application on preview-mkt01-aws-us-west-2
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: preview
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on preview-mkt01-aws-us-west-2
+
+      - deploy-monitors:
+          name: deploy monitors for preview
+          context: *context
+          role: preview
+          filters: *on-tag-main
+          requires:
+            - test test-application on preview-mkt01-aws-eu-central-1
+            - test test-application on preview-mkt01-aws-eu-west-1
+            - test test-application on preview-mkt01-aws-us-east-1
+            - test test-application on preview-mkt01-aws-us-west-2
+
+      - approve preview deployment:
+          type: approval
+          requires:
+            - deploy monitors for preview
+          filters: *on-tag-main
+
+      - deploy-application:
+          name: deploy test-application on nonprod-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview deployment
+      - test-application:
+          name: test test-application on nonprod-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on nonprod-mkt01-aws-eu-central-1
+
+      - deploy-application:
+          name: deploy test-application on nonprod-mkt01-aws-eu-west-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview deployment
+      - test-application:
+          name: test test-application on nonprod-mkt01-aws-eu-west-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on nonprod-mkt01-aws-eu-west-1
+
+      - deploy-application:
+          name: deploy test-application on nonprod-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview deployment
+      - test-application:
+          name: test test-application on nonprod-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on nonprod-mkt01-aws-us-east-1
+
+      - deploy-application:
+          name: deploy test-application on nonprod-mkt01-aws-us-west-2
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - approve preview deployment
+      - test-application:
+          name: test test-application on nonprod-mkt01-aws-us-west-2
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on nonprod-mkt01-aws-us-west-2
+
+      - deploy-monitors:
+          name: deploy monitors for nonprod
+          context: *context
+          role: nonprod
+          filters: *on-tag-main
+          requires:
+            - test test-application on nonprod-mkt01-aws-eu-central-1
+            - test test-application on nonprod-mkt01-aws-eu-west-1
+            - test test-application on nonprod-mkt01-aws-us-east-1
+            - test test-application on nonprod-mkt01-aws-us-west-2
+
+      - approve nonprod deployment:
+          type: approval
+          requires:
+            - deploy monitors for nonprod
+          filters: *on-tag-main
+
+      - deploy-application:
+          name: deploy test-application on prod-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod deployment
+      - test-application:
+          name: test test-application on prod-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on prod-mkt01-aws-eu-central-1
+
+      - deploy-application:
+          name: deploy test-application on prod-mkt01-aws-eu-west-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod deployment
+      - test-application:
+          name: test test-application on prod-mkt01-aws-eu-west-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on prod-mkt01-aws-eu-west-1
+
+      - deploy-application:
+          name: deploy test-application on prod-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod deployment
+      - test-application:
+          name: test test-application on prod-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on prod-mkt01-aws-us-east-1
+
+      - deploy-application:
+          name: deploy test-application on prod-mkt01-aws-us-west-2
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - approve nonprod deployment
+      - test-application:
+          name: test test-application on prod-mkt01-aws-us-west-2
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on prod-mkt01-aws-us-west-2
+
+      - deploy-monitors:
+          name: deploy monitors for prod
+          context: *context
+          role: prod
+          filters: *on-tag-main
+          requires:
+            - test test-application on prod-mkt01-aws-eu-central-1
+            - test test-application on prod-mkt01-aws-eu-west-1
+            - test test-application on prod-mkt01-aws-us-east-1
+            - test test-application on prod-mkt01-aws-us-west-2
+
+      - approve prod deployment:
+          type: approval
+          requires:
+            - deploy monitors for prod
+          filters: *on-tag-main
+
+      - deploy-application:
+          name: deploy test-application on mapi-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: mapi
+          filters: *on-tag-main
+          requires:
+            - approve prod deployment
+      - test-application:
+          name: test test-application on mapi-mkt01-aws-eu-central-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: mapi
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on mapi-mkt01-aws-eu-central-1
+
+      - deploy-application:
+          name: deploy test-application on mapi-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: mapi
+          filters: *on-tag-main
+          requires:
+            - approve prod deployment
+      - test-application:
+          name: test test-application on mapi-mkt01-aws-us-east-1
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: release
+          role: mapi
+          filters: *on-tag-main
+          requires:
+            - deploy test-application on mapi-mkt01-aws-us-east-1
+
+      - deploy-monitors:
+          name: deploy monitors for mapi
+          context: *context
+          role: mapi
+          filters: *on-tag-main
+          requires:
+            - test test-application on mapi-mkt01-aws-eu-central-1
+            - test test-application on mapi-mkt01-aws-us-east-1

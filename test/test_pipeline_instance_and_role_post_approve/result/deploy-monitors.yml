@@ -1,0 +1,5 @@
+      - deploy-monitors:
+          name: deploy monitors for {{.role}}
+          context: *context
+          role: {{.role}}
+          filters: {{.filter}}

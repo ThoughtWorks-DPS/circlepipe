@@ -1,0 +1,22 @@
+      - deploy-application:
+          name: deploy test-application on {{.instance}}
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          filters: {{.filter}}
+          {{.priorapprovalrequired}}
+      - test-application:
+          name: test test-application on {{.instance}}
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          filters: {{.filter}}
+          requires:
+            - deploy test-application on {{.instance}}
+
