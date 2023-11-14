@@ -2,14 +2,14 @@ package cmd
 
 import (
 	"bufio"
-	"fmt"
-	"os"
-	"strings"
 	"errors"
-	"text/template"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/exp/maps"
+	"os"
+	"strings"
+	"text/template"
 )
 
 var pipelineCmd = &cobra.Command{
@@ -18,7 +18,7 @@ var pipelineCmd = &cobra.Command{
 	Long:  `Generate config.yml for specified pipeline`,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		var jobsToBeApproved, requiredJobs, lastJob string
+		var jobsToBeApproved, requiredJobs, lastJob, allPreStepJobs string
 		var pipeControl PipelineMap
 
 		pipeline := args[0]
@@ -26,11 +26,15 @@ var pipelineCmd = &cobra.Command{
 
 		// load pipeControlFile, error if the requested pipeline is not defined
 		pipelineDef, exists := pipeControl[pipeline]
-		if !exists { exitOnError(fmt.Errorf("%s not found in %s", pipeline, pipeControlFile())) }
+		if !exists {
+			exitOnError(fmt.Errorf("%s not found in %s", pipeline, pipeControlFile()))
+		}
 
 		// get the pipeline filter, error if no filter is defined
 		filter := pipelineDef.Filter
-		if filter == "" { exitOnError(fmt.Errorf("filter not found in %s pipeline", pipeline)) }
+		if filter == "" {
+			exitOnError(fmt.Errorf("filter not found in %s pipeline", pipeline))
+		}
 
 		// also generate envfiles if EnvFilesCreate is true
 		if viper.GetBool("EnvFilesCreate") {
@@ -66,7 +70,7 @@ var pipelineCmd = &cobra.Command{
 				// optionally, the pipelines can be built around steps that occur only per role in PipeControl
 				if viper.GetBool("PipePreRoleOnly") {
 					jobsToBeApproved += jobRequiresLine("pre", role)
-					roleVars := asssembleVars(filter, role, "", jobNameTemplate("pre", role), lastJob, requiredJobs, "", "", anyEnvFileValues(role))
+					roleVars := asssembleVars(filter, role, "", jobNameTemplate("pre", role), lastJob, requiredJobs, "", "", "", anyEnvFileValues(role))
 					exitOnError(pre.Execute(outfile, roleVars))
 
 				} else {
@@ -74,20 +78,21 @@ var pipelineCmd = &cobra.Command{
 					for _, instance := range pipelineDef.Roles[role].Deploy {
 						fmt.Printf("    [pre] %s\n", instance)
 						jobsToBeApproved += jobRequiresLine("pre", instance)
-						instanceVars := asssembleVars(filter, role, instance, jobNameTemplate("pre", role), lastJob, requiredJobs, "", "", anyEnvFileValues(instance))
+						instanceVars := asssembleVars(filter, role, instance, jobNameTemplate("pre", role), lastJob, requiredJobs, "", "", "", anyEnvFileValues(instance))
 						exitOnError(pre.Execute(outfile, instanceVars))
 					}
 				}
 			}
 			//
 			lastJob = "requires:" + jobRequiresLine("pre", role)
+			allPreStepJobs = jobsToBeApproved
 
 			// generate an optional approval step after pre- jobs
 			requiredJobs = "requires:"
 			if viper.GetBool("PipeIsApprove") && viper.GetBool("PipeApproveAfterPre") {
 				fmt.Printf("      [approve] %s\n", role)
 				requiredJobs += jobRequiresLine("approve", role)
-				approvalVars := asssembleVars(filter, role, "", jobNameTemplate("approve", role), lastJob, requiredJobs, "", jobsToBeApproved, make(map[string]interface{}))
+				approvalVars := asssembleVars(filter, role, "", jobNameTemplate("approve", role), lastJob, requiredJobs, "", jobsToBeApproved, "", make(map[string]interface{}))
 				if role != viper.GetString("PipeSkipApproval") {
 					exitOnError(approve.Execute(outfile, approvalVars))
 				}
@@ -100,16 +105,15 @@ var pipelineCmd = &cobra.Command{
 				// optionally, the pipelines can be built around steps that occur only per role in PipeControl
 				if viper.GetBool("PipePostRoleOnly") {
 					jobsToBeApproved += jobRequiresLine("post", role)
-					roleVars := asssembleVars(filter, role, "", jobNameTemplate("post", role), lastJob, requiredJobs, jobNameTemplate("approve", role), "", anyEnvFileValues(role))
+					roleVars := asssembleVars(filter, role, "", jobNameTemplate("post", role), lastJob, requiredJobs, jobNameTemplate("approve", role), "", allPreStepJobs, anyEnvFileValues(role))
 					exitOnError(post.Execute(outfile, roleVars))
-
 				} else {
 					// default, pipelines built around steps that occur per instance in PipeControl
 					for _, instance := range pipelineDef.Roles[role].Deploy {
 						fmt.Printf("    [post] %s\n", instance)
 
 						jobsToBeApproved += jobRequiresLine("post", instance)
-						instanceVars := asssembleVars(filter, role, instance, jobNameTemplate("post", role), lastJob, requiredJobs, jobNameTemplate("approve", role), "", anyEnvFileValues(instance))
+						instanceVars := asssembleVars(filter, role, instance, jobNameTemplate("post", role), lastJob, requiredJobs, jobNameTemplate("approve", role), "", "", anyEnvFileValues(instance))
 						exitOnError(post.Execute(outfile, instanceVars))
 					}
 				}
@@ -119,10 +123,11 @@ var pipelineCmd = &cobra.Command{
 			if viper.GetBool("PipeIsApprove") && viper.GetBool("PipeApproveAfterPost") {
 				fmt.Printf("      [approve] %s\n", role)
 				requiredJobs += jobRequiresLine("approve", role)
-				approvalVars := asssembleVars(filter, role, "", jobNameTemplate("approve", role), lastJob, requiredJobs, "", jobsToBeApproved, make(map[string]interface{}))
+				approvalVars := asssembleVars(filter, role, "", jobNameTemplate("approve", role), lastJob, requiredJobs, "", jobsToBeApproved, "", make(map[string]interface{}))
 				if role != viper.GetString("PipeSkipApproval") {
 					exitOnError(approve.Execute(outfile, approvalVars))
 				}
+				jobsToBeApproved = "requires:" // reset jobsToBeApproved after templating approval
 			}
 		}
 	},
@@ -132,7 +137,7 @@ func init() {
 	createCmd.AddCommand(pipelineCmd)
 }
 
-func asssembleVars(filter interface{}, role, instance, jobName, lastJob, requiredJobs, approvalJobName, jobsToBeApproved string, fromEnv map[string]interface{}) map[string]interface{} {
+func asssembleVars(filter interface{}, role string, instance string, jobName string, lastJob string, requiredJobs string, approvalJobName string, jobsToBeApproved string, allPreStepJobs string, fromEnv map[string]interface{}) map[string]interface{} {
 	jsonVars := make(map[string]interface{})
 	jsonVars["filter"] = filter
 	jsonVars["role"] = role
@@ -141,6 +146,11 @@ func asssembleVars(filter interface{}, role, instance, jobName, lastJob, require
 	jsonVars["jobname"] = jobName
 	jsonVars["approvaljobname"] = approvalJobName
 	jsonVars["jobstobeapproved"] = jobsToBeApproved
+	if lastJob != "" {
+		jsonVars["allprestepjobs"] = allPreStepJobs
+	} else {
+		jsonVars["allprestepjobs"] = ""
+	}
 	if lastJob != "" {
 		jsonVars["lastjob"] = lastJob
 	} else {

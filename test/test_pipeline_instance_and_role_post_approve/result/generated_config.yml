@@ -277,6 +277,11 @@ workflows:
           context: *context
           role: preview
           filters: *on-tag-main
+          requires:
+            - test test-application on preview-mkt01-aws-eu-central-1
+            - test test-application on preview-mkt01-aws-eu-west-1
+            - test test-application on preview-mkt01-aws-us-east-1
+            - test test-application on preview-mkt01-aws-us-west-2
 
       - approve preview deployment:
           type: approval
@@ -381,6 +386,11 @@ workflows:
           context: *context
           role: nonprod
           filters: *on-tag-main
+          requires:
+            - test test-application on nonprod-mkt01-aws-eu-central-1
+            - test test-application on nonprod-mkt01-aws-eu-west-1
+            - test test-application on nonprod-mkt01-aws-us-east-1
+            - test test-application on nonprod-mkt01-aws-us-west-2
 
       - approve nonprod deployment:
           type: approval
@@ -485,6 +495,11 @@ workflows:
           context: *context
           role: prod
           filters: *on-tag-main
+          requires:
+            - test test-application on prod-mkt01-aws-eu-central-1
+            - test test-application on prod-mkt01-aws-eu-west-1
+            - test test-application on prod-mkt01-aws-us-east-1
+            - test test-application on prod-mkt01-aws-us-west-2
 
       - approve prod deployment:
           type: approval
@@ -543,3 +558,6 @@ workflows:
           context: *context
           role: mapi
           filters: *on-tag-main
+          requires:
+            - test test-application on mapi-mkt01-aws-eu-central-1
+            - test test-application on mapi-mkt01-aws-us-east-1
