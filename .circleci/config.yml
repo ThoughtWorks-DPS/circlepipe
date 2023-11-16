@@ -65,7 +65,8 @@ jobs:
       - op/install-op:
           os: Ubuntu
       - op/env
-      - cosign/install
+      - cosign/install:
+          cosign-version: v1.8.0
       - run:
           name: fetch keys for signing
           command: |
