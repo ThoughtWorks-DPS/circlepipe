@@ -495,9 +495,11 @@ workflows:
 
 ```
 
-###### 6.4.3 Include Pre and Post jobs, Approval step after the Post job
+###### 6.4.3 Include role-only Pre and instance Post jobs, Approval step after the Post job
 
-This is an example of using the combination of role-only for the pre- jobs and instances for the post- job follwed by an approval. The typical use case being in multi-cluster deployments where a single job is all that is needed to trigger the deployments, however testing must be done per instance.  
+This is an example of using the combination of role-only for the pre-jobs and instances for the post-job followed by an
+approval. The typical use case being in multi-cluster deployments where a single job is all that is needed to trigger
+the deployments, however testing must be done per instance.
 
 Pre: deploy-metrics-server.yml
 ```yaml
@@ -542,7 +544,64 @@ Generate the pipeline by running the `create pipeline PIPELINENAME` command with
 --PipeWorkflowName="deploy-metrics-server"                # use a more description workflow name
 ```
 
+###### 6.4.4 Include Instance Pre Jobs and Role-only Post job, Approval step after the Post job
+Supported in version 0.3.0 or later.
 
+Similar to the scenario described in the previous section, but flipped: jobs run per-instance for the pre-jobs with a
+single template rendered for the role-only post-job, followed by an approval. An example use-case could be in a
+multi-cluster deployments where a job needs to run for each cluster (deploy and test), followed by a creation of a
+single dashboard or monitor that covers the collection of clusters.
+
+Note the use of the `.{{allprestepjobs}}` in the Role-only job. This allows the post step to correctly require all
+rendered instances of the Pre template (one per cluster).
+
+Pre: `deploy-and-test-application.yaml`
+```yaml
+      - deploy-application:
+          name: deploy test-application on {{.instance}}
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          filters: {{.filter}}
+          {{.priorapprovalrequired}}
+      - test-application:
+          name: test test-application on {{.instance}}
+          context: *context
+          org-name: ThoughtWorks-DPS
+          repo-name: di-global-service-test-application
+          app-name: test-application
+          pipeline-name: {{.pipeline_name}}
+          role: {{.role}}
+          filters: {{.filter}}
+          requires:
+            - deploy test-application on {{.instance}}
+```
+
+Post: `deploy-monitors.yaml`
+```yaml
+      - deploy-monitors:
+          name: deploy monitors for {{.role}}
+          context: *context
+          role: {{.role}}
+          filters: {{.filter}}
+          {{.allprestepjobs}}
+```
+
+```yaml
+--PipeApproveAfterPost=true                               # approval step comes after post- jobs
+--PipeApproveAfterPre=false                               # no approval step after pre- jobs
+--PipPostJobName="deploy monitors for %s"                 # more descriptive name for post- job
+--PipeApprovalJobname="approve %s deployment"             # set the approval job name to better description
+--PipePreRoleOnly=false                                   # generate pre-jobs for each instance
+--PipePostRoleOnly=true                                   # generate post-jobs at the role level only
+--PipePreJobName="test test-application on %s"            # rename the Pre- job name to a more accurate description
+--PipeWorkflowName="deploy-test-application"              # use a more description workflow name
+--PipePreTemplate="deploy-and-test-application.yml"       # use a custom name for the pre template file
+--PipePostTemplate="deploy-monitors.yml"                  # use a custom name for the post template file
+```
 
 <hr>  
 
