@@ -544,15 +544,15 @@ Generate the pipeline by running the `create pipeline PIPELINENAME` command with
 --PipeWorkflowName="deploy-metrics-server"                # use a more description workflow name
 ```
 
-###### 6.4.4 Include Instance Pre Jobs and Role-only Post job, Approval step after the Post job
+###### 6.4.4 Include Instance Pre jobs and role-only Post job, Approval step after the Post job
 Supported in version 0.3.0 or later.
 
 Similar to the scenario described in the previous section, but flipped: jobs run per-instance for the pre-jobs with a
-single template rendered for the role-only post-job, followed by an approval. An example use-case could be in a
-multi-cluster deployments where a job needs to run for each cluster (deploy and test), followed by a creation of a
-single dashboard or monitor that covers the collection of clusters.
+single template rendered for the role-only post-job, followed by an approval. An example use-case could be in
+multi-cluster deployments where during a pre step, one or more jobs need to run for each cluster (deploy and test),
+followed by a post step in which a single dashboard or monitor that covers the collection of clusters.
 
-Note the use of the `.{{allprestepjobs}}` in the Role-only job. This allows the post step to correctly require all
+Note the use of the `{{.allprestepjobs}}` in the Role-only job. This allows the post step to correctly require all
 rendered instances of the Pre template (one per cluster).
 
 Pre: `deploy-and-test-application.yaml`
